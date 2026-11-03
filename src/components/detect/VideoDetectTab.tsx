@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const VideoDetectTab: React.FC = () => {
-  const { config, addToast } = useConfig();
+  const { config, addToast, getPestName } = useConfig();
   const navigate = useNavigate();
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -288,7 +288,7 @@ export const VideoDetectTab: React.FC = () => {
                     <ClassBadge
                       key={name}
                       clsId={name}
-                      name={name}
+                      name={getPestName(name)}
                       count={count}
                       onClick={() => setSelectedPestForModal(name)}
                     />
@@ -339,7 +339,7 @@ export const VideoDetectTab: React.FC = () => {
                             key={dIdx}
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300"
                           >
-                            <span>{d.cls}</span>
+                            <span>{getPestName(d.cls_id ?? d.cls)}</span>
                             <span className="font-mono opacity-70">
                               {(d.conf * 100).toFixed(0)}%
                             </span>

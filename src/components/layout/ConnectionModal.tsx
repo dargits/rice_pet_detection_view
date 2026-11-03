@@ -3,7 +3,6 @@ import { Modal } from '../ui/Modal';
 import { useConfig } from '../../context/ConfigContext';
 import {
   Server,
-  Key,
   Sliders,
   Film,
   CheckCircle2,
@@ -13,8 +12,10 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Languages,
 } from 'lucide-react';
 import { normalizeUrl, fetchHealth } from '../../lib/api';
+import { PestLanguageOption } from '../../types';
 
 export const ConnectionModal: React.FC = () => {
   const { config, updateConfig, isSettingsOpen, closeSettings, addToast, checkHealth } = useConfig();
@@ -24,6 +25,7 @@ export const ConnectionModal: React.FC = () => {
   const [defaultConf, setDefaultConf] = useState(config.defaultConf);
   const [videoSkip, setVideoSkip] = useState(config.videoSkip);
   const [mockMode, setMockMode] = useState(config.mockMode);
+  const [pestLanguage, setPestLanguageState] = useState<PestLanguageOption>(config.pestLanguage || 'vi');
 
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -41,6 +43,7 @@ export const ConnectionModal: React.FC = () => {
       setDefaultConf(config.defaultConf);
       setVideoSkip(config.videoSkip);
       setMockMode(config.mockMode);
+      setPestLanguageState(config.pestLanguage || 'vi');
       setTestResult(null);
     }
   }, [isSettingsOpen, config]);
@@ -65,6 +68,7 @@ export const ConnectionModal: React.FC = () => {
         defaultConf,
         videoSkip,
         mockMode,
+        pestLanguage,
       };
 
       const res = await fetchHealth(tempConfig);
@@ -91,6 +95,7 @@ export const ConnectionModal: React.FC = () => {
       defaultConf: Number(defaultConf),
       videoSkip: Number(videoSkip),
       mockMode,
+      pestLanguage,
     });
 
     addToast('success', 'Đã lưu cấu hình kết nối', 'Các thay đổi đã được cập nhật thành công.');
@@ -242,6 +247,42 @@ export const ConnectionModal: React.FC = () => {
               <span>3 (Khuyến nghị)</span>
               <span>10 (Nhanh)</span>
             </div>
+          </div>
+        </div>
+
+        {/* Pest Language Option (Vietnamese vs English) */}
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Languages className="w-4 h-4 text-emerald-500" />
+            Ngôn ngữ hiển thị tên sâu bệnh (Pest Names)
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'vi', label: 'Tiếng Việt', desc: 'Rầy nâu, Sâu cuốn lá...' },
+              { id: 'en', label: 'English', desc: 'Brown Planthopper...' },
+              { id: 'both', label: 'Song ngữ', desc: 'Rầy nâu (Planthopper)' },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPestLanguageState(opt.id as PestLanguageOption)}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  pestLanguage === opt.id
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 shadow-sm ring-1 ring-emerald-500'
+                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="font-bold text-xs flex items-center justify-between">
+                  <span>{opt.label}</span>
+                  {pestLanguage === opt.id && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  )}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {opt.desc}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

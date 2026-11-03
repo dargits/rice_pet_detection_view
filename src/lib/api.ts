@@ -52,6 +52,7 @@ export function getSavedConfig(): AppConfig {
         defaultConf: typeof parsed.defaultConf === 'number' ? parsed.defaultConf : 0.4,
         videoSkip: typeof parsed.videoSkip === 'number' ? parsed.videoSkip : 3,
         mockMode: isMockParam || Boolean(parsed.mockMode),
+        pestLanguage: parsed.pestLanguage || 'vi',
       };
     }
   } catch (e) {
@@ -64,6 +65,7 @@ export function getSavedConfig(): AppConfig {
     defaultConf: 0.4,
     videoSkip: 3,
     mockMode: isMockParam,
+    pestLanguage: 'vi',
   };
 }
 

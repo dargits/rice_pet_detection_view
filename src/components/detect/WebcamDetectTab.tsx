@@ -25,7 +25,7 @@ interface DeviceItem {
 }
 
 export const WebcamDetectTab: React.FC = () => {
-  const { config, addToast } = useConfig();
+  const { config, addToast, getPestName } = useConfig();
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [devices, setDevices] = useState<DeviceItem[]>([]);
@@ -174,6 +174,7 @@ export const WebcamDetectTab: React.FC = () => {
               detections,
               originalWidth: data.width,
               originalHeight: data.height,
+              getLabel: (d) => getPestName(d.cls_id ?? d.cls),
             });
           }
         } catch (e) {
@@ -271,6 +272,7 @@ export const WebcamDetectTab: React.FC = () => {
             detections: mockDets,
             originalWidth: targetW,
             originalHeight: targetH,
+            getLabel: (d) => getPestName(d.cls_id ?? d.cls),
           });
         }
       }, 120);
@@ -521,7 +523,7 @@ export const WebcamDetectTab: React.FC = () => {
                       <ClassBadge
                         key={name}
                         clsId={det?.cls_id ?? name}
-                        name={name}
+                        name={getPestName(name)}
                         count={count}
                         onClick={() => setSelectedPestForModal(name)}
                       />
@@ -562,7 +564,7 @@ export const WebcamDetectTab: React.FC = () => {
                   <ClassBadge
                     key={name}
                     clsId={name}
-                    name={name}
+                    name={getPestName(name)}
                     onClick={() => setSelectedPestForModal(name)}
                   />
                 ))}

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
-  const { config, addToast } = useConfig();
+  const { config, addToast, getPestName } = useConfig();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [items, setItems] = useState<HistoryItem[]>([]);
@@ -263,7 +263,7 @@ export const HistoryPage: React.FC = () => {
                             <ClassBadge
                               key={name}
                               clsId={name}
-                              name={name}
+                              name={getPestName(name)}
                               count={count}
                               onClick={() => setSelectedPestName(name)}
                             />
@@ -411,7 +411,7 @@ export const HistoryPage: React.FC = () => {
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          #{idx + 1} {d.cls}
+                          #{idx + 1} {getPestName(d.cls_id ?? d.cls)}
                         </span>
                         <span className="font-mono text-[10px] text-slate-400">
                           [{d.box.map((n: number) => Math.round(n)).join(', ')}]

@@ -5,6 +5,7 @@ import { fetchPests } from '../../lib/api';
 import { useConfig } from '../../context/ConfigContext';
 import { ShieldCheck, Bug, Loader2 } from 'lucide-react';
 import { getClassColor } from '../../lib/colors';
+import { findPestEntry } from '../../lib/pestTranslations';
 
 interface SpeciesModalProps {
   pestName: string | null;
@@ -66,6 +67,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
   if (!pestName) return null;
 
   const color = getClassColor(pestData?.cls_id ?? pestName);
+  const translation = findPestEntry(pestData?.cls_id ?? pestData?.cls ?? pestName);
 
   return (
     <Modal
@@ -93,9 +95,14 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: color.stroke }}
                 />
-                {pestData.name || pestName}
+                {translation?.vi || pestData.name || pestName}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+              {translation?.en && (
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  {translation.en} {translation.scientific ? `• ${translation.scientific}` : ''}
+                </p>
+              )}
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">
                 Mã lớp (ID): {pestData.cls_id} • Khóa hệ thống: {pestData.cls}
               </p>
             </div>

@@ -8,6 +8,7 @@ interface DrawOptions {
   originalWidth?: number;
   originalHeight?: number;
   showLabels?: boolean;
+  getLabel?: (det: Detection) => string;
 }
 
 /**
@@ -20,6 +21,7 @@ export function drawDetections({
   originalWidth,
   originalHeight,
   showLabels = true,
+  getLabel,
 }: DrawOptions): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -63,7 +65,8 @@ export function drawDetections({
 
     if (showLabels) {
       const confPercent = (det.conf * 100).toFixed(1);
-      const label = `${det.cls} ${confPercent}%`;
+      const name = getLabel ? getLabel(det) : det.cls;
+      const label = `${name} ${confPercent}%`;
 
       const fontSize = Math.max(11, Math.min(15, Math.round(displayWidth / 45)));
       ctx.font = `600 ${fontSize}px Inter, sans-serif`;
@@ -103,7 +106,8 @@ export function drawDetections({
  */
 export async function exportAnnotatedImage(
   imageSource: HTMLImageElement,
-  detections: Detection[]
+  detections: Detection[],
+  getLabel?: (det: Detection) => string
 ): Promise<string> {
   const origW = imageSource.naturalWidth || 800;
   const origH = imageSource.naturalHeight || 600;
@@ -133,7 +137,8 @@ export async function exportAnnotatedImage(
     ctx.strokeRect(x1, y1, sw, sh);
 
     const confPercent = (det.conf * 100).toFixed(1);
-    const label = `${det.cls} ${confPercent}%`;
+    const name = getLabel ? getLabel(det) : det.cls;
+    const label = `${name} ${confPercent}%`;
     const fontSize = Math.max(14, Math.round(origW / 40));
     ctx.font = `bold ${fontSize}px Inter, sans-serif`;
 
@@ -158,4 +163,3 @@ export async function exportAnnotatedImage(
 
   return offscreen.toDataURL('image/jpeg', 0.95);
 }
-

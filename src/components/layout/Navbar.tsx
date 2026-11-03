@@ -17,11 +17,18 @@ import {
   Wifi,
   WifiOff,
   Sprout,
+  Languages,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { status, deviceInfo, config, openSettings, theme, setTheme } = useConfig();
+  const { status, deviceInfo, config, openSettings, theme, setTheme, pestLanguage, setPestLanguage } = useConfig();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const cyclePestLanguage = () => {
+    if (pestLanguage === 'vi') setPestLanguage('en');
+    else if (pestLanguage === 'en') setPestLanguage('both');
+    else setPestLanguage('vi');
+  };
 
   const navLinks = [
     { to: '/', label: 'Nhận diện', icon: ScanLine },
@@ -159,6 +166,21 @@ export const Navbar: React.FC = () => {
                 <span className="font-semibold">Offline</span>
               </>
             )}
+          </button>
+
+          {/* Language Switcher */}
+          <button
+            onClick={cyclePestLanguage}
+            aria-label="Đổi ngôn ngữ hiển thị tên sâu bệnh"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm"
+            title={`Ngôn ngữ tên sâu hại: ${
+              pestLanguage === 'vi' ? 'Tiếng Việt' : pestLanguage === 'en' ? 'English' : 'Song ngữ (VI + EN)'
+            } (Bấm để chuyển đổi)`}
+          >
+            <Languages className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-mono text-[11px] uppercase">
+              {pestLanguage === 'both' ? 'VI+EN' : pestLanguage}
+            </span>
           </button>
 
           {/* Theme switcher */}

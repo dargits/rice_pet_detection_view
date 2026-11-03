@@ -3,16 +3,18 @@ import { useConfig } from '../context/ConfigContext';
 import { fetchPests } from '../lib/api';
 import { PestInfo } from '../types';
 import { getClassColor } from '../lib/colors';
+import { findPestEntry } from '../lib/pestTranslations';
 import {
   Bug,
   Search,
   ShieldCheck,
   RefreshCw,
   FileQuestion,
+  Languages,
 } from 'lucide-react';
 
 export const PestsPage: React.FC = () => {
-  const { config, addToast } = useConfig();
+  const { config, addToast, pestLanguage, setPestLanguage } = useConfig();
   const [pests, setPests] = useState<PestInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -36,9 +38,13 @@ export const PestsPage: React.FC = () => {
   const filteredPests = pests.filter((p) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
+    const entry = findPestEntry(p.cls_id ?? p.cls);
     return (
       p.name.toLowerCase().includes(q) ||
       p.cls.toLowerCase().includes(q) ||
+      (entry?.en && entry.en.toLowerCase().includes(q)) ||
+      (entry?.vi && entry.vi.toLowerCase().includes(q)) ||
+      (entry?.scientific && entry.scientific.toLowerCase().includes(q)) ||
       (p.description && p.description.toLowerCase().includes(q)) ||
       (p.prevention && p.prevention.toLowerCase().includes(q))
     );
@@ -114,6 +120,16 @@ export const PestsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPests.map((pest) => {
             const color = getClassColor(pest.cls_id ?? pest.cls);
+            const translation = findPestEntry(pest.cls_id ?? pest.cls);
+            const primaryTitle =
+              pestLanguage === 'en'
+                ? translation?.en || pest.name
+                : translation?.vi || pest.name;
+            const secondaryTitle =
+              pestLanguage === 'en'
+                ? translation?.vi
+                : translation?.en;
+
             return (
               <div
                 key={pest.cls_id}
@@ -131,11 +147,18 @@ export const PestsPage: React.FC = () => {
                       title="Màu đại diện trong biểu đồ & nhận diện"
                     />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                    {pest.name}
-                  </h3>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                      {primaryTitle}
+                    </h3>
+                    {secondaryTitle && (
+                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        {secondaryTitle} {translation?.scientific ? `• ${translation.scientific}` : ''}
+                      </p>
+                    )}
+                  </div>
                   <p className="text-[11px] text-slate-400 font-mono">
-                    Mã nhãn: <code className="text-emerald-600 dark:text-emerald-400">{pest.cls}</code>
+                    Mã nhãn: <code className="text-slate-600 dark:text-slate-300 font-semibold">{pest.cls}</code>
                   </p>
                 </div>
 

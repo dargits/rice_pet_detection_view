@@ -85,12 +85,15 @@ export interface StatsResponse {
   by_day: Record<string, Record<string, number>>;
 }
 
+export type PestLanguageOption = 'vi' | 'en' | 'both';
+
 export interface AppConfig {
   apiUrl: string;
   apiKey: string;
   defaultConf: number;
   videoSkip: number;
   mockMode: boolean;
+  pestLanguage: PestLanguageOption;
 }
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { AppConfig, HealthResponse, ToastMessage, ToastType } from '../types';
+import { AppConfig, HealthResponse, ToastMessage, ToastType, PestLanguageOption } from '../types';
 import { getSavedConfig, saveConfig, fetchHealth, normalizeUrl } from '../lib/api';
+import { getPestDisplayName } from '../lib/pestTranslations';
 
 interface ConfigContextValue {
   config: AppConfig;
@@ -19,6 +20,9 @@ interface ConfigContextValue {
   removeToast: (id: string) => void;
   theme: 'light' | 'dark' | 'system';
   setTheme: (t: 'light' | 'dark' | 'system') => void;
+  pestLanguage: PestLanguageOption;
+  setPestLanguage: (lang: PestLanguageOption) => void;
+  getPestName: (raw: string | number) => string;
 }
 
 const ConfigContext = createContext<ConfigContextValue | null>(null);
@@ -37,6 +41,28 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(() => {
     return (localStorage.getItem('rice_theme') as 'light' | 'dark' | 'system') || 'system';
   });
+
+  // Update configuration
+  const updateConfig = useCallback((patch: Partial<AppConfig>) => {
+    const updated = saveConfig(patch);
+    setConfigState(updated);
+  }, []);
+
+  const pestLanguage = config.pestLanguage || 'vi';
+
+  const setPestLanguage = useCallback(
+    (lang: PestLanguageOption) => {
+      updateConfig({ pestLanguage: lang });
+    },
+    [updateConfig]
+  );
+
+  const getPestName = useCallback(
+    (raw: string | number) => {
+      return getPestDisplayName(raw, pestLanguage, classes);
+    },
+    [pestLanguage, classes]
+  );
 
   const checkCountRef = useRef(0);
 
@@ -64,12 +90,6 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  // Update configuration
-  const updateConfig = useCallback((patch: Partial<AppConfig>) => {
-    const updated = saveConfig(patch);
-    setConfigState(updated);
   }, []);
 
   // Health check worker
@@ -134,6 +154,9 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     removeToast,
     theme,
     setTheme: setThemeState,
+    pestLanguage,
+    setPestLanguage,
+    getPestName,
   };
 
   return <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>;

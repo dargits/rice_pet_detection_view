@@ -28,7 +28,7 @@ interface ImageItem {
 }
 
 export const ImageDetectTab: React.FC = () => {
-  const { config, addToast } = useConfig();
+  const { config, addToast, getPestName } = useConfig();
   const [images, setImages] = useState<ImageItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
@@ -85,13 +85,14 @@ export const ImageDetectTab: React.FC = () => {
         detections: currentItem.result.detections,
         originalWidth: currentItem.result.width,
         originalHeight: currentItem.result.height,
+        getLabel: (d) => getPestName(d.cls_id ?? d.cls),
       });
     } else {
       // Clear canvas if no detections
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  }, [images, selectedIndex]);
+  }, [images, selectedIndex, getPestName]);
 
   useEffect(() => {
     redrawCanvas();
@@ -148,7 +149,11 @@ export const ImageDetectTab: React.FC = () => {
     if (!currentItem || !imgRef.current || !currentItem.result) return;
 
     try {
-      const dataUrl = await exportAnnotatedImage(imgRef.current, currentItem.result.detections);
+      const dataUrl = await exportAnnotatedImage(
+        imgRef.current,
+        currentItem.result.detections,
+        (d) => getPestName(d.cls_id ?? d.cls)
+      );
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = `rice_pest_${currentItem.file.name.replace(/\.[^/.]+$/, '')}_annotated.jpg`;
@@ -393,7 +398,7 @@ export const ImageDetectTab: React.FC = () => {
                                 <ClassBadge
                                   key={name}
                                   clsId={det?.cls_id ?? name}
-                                  name={name}
+                                  name={getPestName(name)}
                                   count={count}
                                   onClick={() => setSelectedPestForModal(name)}
                                 />
@@ -419,7 +424,7 @@ export const ImageDetectTab: React.FC = () => {
                                 className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 cursor-pointer transition-colors"
                               >
                                 <span className="font-medium text-slate-800 dark:text-slate-200">
-                                  #{idx + 1} {det.cls}
+                                  #{idx + 1} {getPestName(det.cls_id ?? det.cls)}
                                 </span>
                                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                   {(det.conf * 100).toFixed(1)}%

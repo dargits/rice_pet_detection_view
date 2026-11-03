@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 
 export const StatsPage: React.FC = () => {
-  const { addToast } = useConfig();
+  const { addToast, getPestName } = useConfig();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -66,7 +66,8 @@ export const StatsPage: React.FC = () => {
   // Prepare chart data for by_class
   const classChartData = classCounts
     .map(([name, count]) => ({
-      name,
+      name: getPestName(name),
+      rawName: name,
       count,
       fill: getClassColor(name).stroke,
     }))
@@ -163,7 +164,7 @@ export const StatsPage: React.FC = () => {
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
-            {mostFrequentPest ? mostFrequentPest[0] : 'Chưa có'}
+            {mostFrequentPest ? getPestName(mostFrequentPest[0]) : 'Chưa có'}
           </div>
           <p className="text-[11px] text-slate-400">
             {mostFrequentPest ? `${mostFrequentPest[1]} cá thể ghi nhận` : '—'}
