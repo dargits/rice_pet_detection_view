@@ -10,56 +10,88 @@ import {
 } from '../types';
 
 export const MOCK_CLASSES: Record<string, string> = {
-  '0': 'Rầy nâu',
-  '1': 'Sâu cuốn lá',
-  '2': 'Sâu đục thân',
-  '3': 'Bọ xít dài',
-  '4': 'Bọ trĩ',
-  '5': 'Bọ gai',
+  '0': 'rice_leaf_roller',
+  '1': 'rice_leaf_caterpillar',
+  '2': 'asiatic_rice_borer',
+  '3': 'yellow_rice_borer',
+  '4': 'rice_gall_midge',
+  '5': 'brown_plant_hopper',
+  '6': 'white_backed_plant_hopper',
+  '7': 'small_brown_plant_hopper',
+  '8': 'rice_water_weevil',
+  '9': 'rice_leafhopper',
 };
 
 export const MOCK_PESTS: PestInfo[] = [
   {
     cls_id: 0,
-    cls: 'ray_nau',
-    name: 'Rầy nâu (Nilaparvata lugens)',
-    description: 'Rầy nâu trưởng thành có màu nâu thẫm đến nâu vàng. Cả rầy non và trưởng thành đều chích hút nhựa ở phần gốc thân cây lúa, làm cây úa vàng, khô héo gọi là "cháy rầy". Rầy nâu còn là môi giới truyền bệnh vàng lùn và lùn xoắn lá cực kỳ nguy hiểm.',
-    prevention: 'Áp dụng biện pháp "1 phải 5 giảm". Gieo sạ đồng loạt, né rầy theo khuyến cáo ngành nông nghiệp. Bảo tồn thiên địch (nhện, bọ xít nước, bọ ba khoang). Khi mật độ trên 3 con/tép, sử dụng thuốc đặc trị nhóm ức chế lột xác như Buprofezin, Pymetrozine hoặc hoạt chất Triflufezopyrim.'
+    cls: 'rice_leaf_roller',
+    name: 'Sâu cuốn lá lúa (Rice Leaf Roller)',
+    description: 'Sâu non nhả tơ kết mép lá lúa lại thành tổ hình ống tròn rồi ẩn nấp bên trong gặm ăn chất xanh diệp lục, chỉ chừa lại lớp biểu bì mỏng màu trắng xơ xác. Ruộng bị hại nặng trông trắng bạc, suy giảm nghiêm trọng khả năng quang hợp, làm hạt lép lửng.',
+    prevention: 'Không bón thừa phân đạm. Bón phân cân đối N-P-K theo từng giai đoạn. Thường xuyên thăm đồng, khi phát hiện mật độ bướm rộ 4-6 ngày thì tiến hành phun trừ sâu non tuổi 1-2. Ưu tiên chế phẩm vi sinh Bacillus thuringiensis (Bt) hoặc thuốc có hoạt chất Indoxacarb, Emamectin benzoate, Chlorantraniliprole.'
   },
   {
     cls_id: 1,
-    cls: 'sau_cuon_la',
-    name: 'Sâu cuốn lá (Cnaphalocrocis medinalis)',
-    description: 'Sâu non nhả tơ kết mép lá lúa thành bao tròn rồi nằm bên trong ăn nhu mô lá, để lại màng biểu bì màu trắng mỏng. Ruộng bị hại xơ xác, giảm diện tích quang hợp nghiêm trọng, làm hạt lúa lép lửng.',
-    prevention: 'Không bón thừa đạm. Vệ sinh đồng ruộng, diệt sạch cỏ dại bờ ruộng. Thăm đồng phát hiện bướm rộ 5-7 ngày để phun diệt sâu non tuổi 1-2. Dùng chế phẩm sinh học Bt hoặc thuốc có hoạt chất Indoxacarb, Emamectin benzoate, Chlorantraniliprole.'
+    cls: 'rice_leaf_caterpillar',
+    name: 'Sâu đo lúa / Sâu ăn lá lúa (Rice Leaf Caterpillar)',
+    description: 'Sâu non ăn khuyết mép lá lúa, trường hợp mật độ cao có thể cắn trụi toàn bộ phiến lá chỉ chừa lại gân chính, đặc biệt nguy hại ở giai đoạn mạ và lúa đẻ nhánh. Sâu có tập tính di chuyển kiểu uốn cong mình như sâu đo.',
+    prevention: 'Vệ sinh sạch cỏ dại bờ ruộng trước mùa vụ. Bảo tồn các loài thiên địch tự nhiên như nhện giăng, bọ rùa, ong ký sinh. Khi mật độ sâu cao vượt ngưỡng kinh tế, phun thuốc trừ sâu gốc sinh học hoặc các nhóm thuốc tiếp xúc, vị độc.'
   },
   {
     cls_id: 2,
-    cls: 'sau_duc_than',
-    name: 'Sâu đục thân bướm 2 chấm (Scirpophaga incertulas)',
-    description: 'Sâu non đục vào bẹ và thân lúa, cắn đứt mạch dẫn dinh dưỡng. Ở giai đoạn đẻ nhánh làm dảnh lúa héo ("dảnh héo"); giai đoạn trỗ làm bông bạc, lép hoàn toàn ("bông bạc").',
-    prevention: 'Thu hoạch lúa sát gốc, cày lật gốc rạ tiêu diệt nhộng. Đặt bẫy đèn dự báo lứa bướm rộ. Ngắt ổ trứng sâu khi thăm đồng. Dùng các loại thuốc thấm sâu hoặc lưu dẫn giai đoạn lúa chuẩn bị trỗ và trỗ lẹt xẹt.'
+    cls: 'asiatic_rice_borer',
+    name: 'Sâu đục thân 5 vạch kẻ đầu nâu (Asiatic Rice Borer)',
+    description: 'Sâu non có 5 sọc nâu tím chạy dọc lưng, đầu màu nâu bóng. Chúng đục vào bẹ lá rồi chui vào trong thân cây lúa cắn đứt bó mạch dẫn nhựa. Gây ra hiện tượng dảnh héo ở thời kỳ đẻ nhánh và bông bạc hoàn toàn ở thời kỳ trỗ chín.',
+    prevention: 'Sau thu hoạch cần cày lật đất và ngâm nước diệt nhộng ẩn trong gốc rạ. Bố trí thời vụ gieo cấy tập trung né lứa bướm rộ. Dùng bẫy đèn dự tính dự báo. Khi thấy dảnh héo rải rác hoặc trước trỗ 5-7 ngày phun thuốc có tính lưu dẫn thấm sâu.'
   },
   {
     cls_id: 3,
-    cls: 'bo_xit_dai',
-    name: 'Bọ xít dài / Bọ xít hôi (Leptocorisa acuta)',
-    description: 'Bọ xít dài có thân thon dài, màu xanh vàng hoặc nâu lục, phát mùi hôi đặc trưng. Trưởng thành và sâu non châm vòi hút nhựa hạt lúa non giai đoạn ngậm sữa và chắc xanh, làm hạt lép, lửng hoặc biến dạng có đốm đen, giảm giá trị thương phẩm.',
-    prevention: 'Vệ sinh bờ cỏ, không trồng lúa gối vụ kéo dài. Dùng vợt bắt bọ xít lúc sáng sớm khi sương chưa tan hoặc chiều mát. Khi mật độ cao dùng thuốc nhóm cúc tổng hợp (Cypermethrin, Lambda-cyhalothrin) phun khi lúa ngậm sữa.'
+    cls: 'yellow_rice_borer',
+    name: 'Sâu đục thân bướm 2 chấm (Yellow Rice Borer)',
+    description: 'Bướm cái màu vàng nhạt, giữa mỗi cánh trước có một chấm đen rõ nét. Sâu non màu trắng sữa hoặc vàng nhạt, đục rỗng thân lúa làm gãy gục dảnh và bông bạc trắng xơ. Đây là một trong những loài dịch hại nguy hiểm và phổ biến nhất trên cây lúa.',
+    prevention: 'Ngắt ổ trứng sâu khi thăm đồng lúc lúa con gái. Thu hoạch lúa sát mặt đất. Khi bướm rộ đẻ nhánh hoặc lúa bắt đầu trỗ le te (5%), phun các dòng thuốc đặc trị đục thân như Chlorantraniliprole, Cartap hoặc Fipronil.'
   },
   {
     cls_id: 4,
-    cls: 'bo_tri',
-    name: 'Bọ trĩ lúa (Stenchaetothrips biformis)',
-    description: 'Côn trùng rất nhỏ, màu nâu đen hoặc vàng nhạt. Thường gây hại ở giai đoạn mạ và lúa đẻ nhánh. Bọ trĩ chích hút nhựa ở chóp lá non làm đầu lá quăn queo, khô vàng từ chóp lá vào trong, cây còi cọc.',
-    prevention: 'Giữ mực nước ruộng ổn định 3-5 cm để dìm bọ trĩ. Bón phân cân đối, bổ sung dinh dưỡng giúp cây lúa ra lá mới nhanh. Nếu hạn nặng sâu rộ, phun thuốc chứa Thiamethoxam hoặc Imidacloprid.'
+    cls: 'rice_gall_midge',
+    name: 'Muỗi hành / Muỗi đầu nguyễn (Rice Gall Midge)',
+    description: 'Muỗi có kích thước nhỏ như muỗi nhà, màu nâu vàng. Ấu trùng xâm nhập vào đỉnh sinh trưởng của chồi non, tiết dịch kích thích bẹ lá biến dạng cuộn tròn lại thành ống rỗng màu trắng xám gọi là "cọng hành" (ống năn). Chồi bị hại không trỗ bông được, cây đẻ nhiều chồi vô hiệu.',
+    prevention: 'Không sạ quá dày. Giữ mực nước ruộng hợp lý, tránh để ruộng khô hạn kéo dài tạo điều kiện muỗi phát triển. Bón phân NPK cân đối, tránh thừa đạm. Phun hoặc rải thuốc hạt gốc lưu dẫn khi phát hiện lứa muỗi rộ ở giai đoạn đầu vụ.'
   },
   {
     cls_id: 5,
-    cls: 'bo_gai',
-    name: 'Bọ gai (Dicladispa armigera)',
-    description: 'Trưởng thành có gai nhọn tua tủa quanh thân và cánh, màu xanh ánh kim hoặc đen bóng. Sâu non sống bên trong mô lá đục thành đường hầm trắng; con trưởng thành ăn biểu bì mặt trên của lá thành các vệt dài trắng.',
-    prevention: 'Dọn sạch cỏ dại ký chủ quanh bờ ruộng. Tháo nước ngập nhẹ và vớt sâu bọ. Sử dụng các loại thuốc trừ sâu nội hấp khi xuất hiện mật độ cao trước khi sâu đục sâu vào mô lá.'
+    cls: 'brown_plant_hopper',
+    name: 'Rầy nâu (Brown Plant Hopper)',
+    description: 'Rầy nâu trưởng thành và rầy non tập trung chích hút nhựa ở phần gốc thân cây lúa. Khi mật độ quá cao gây hiện tượng "cháy rầy" từng chòm rồi lan rộng cả ruộng. Đặc biệt nguy hiểm, rầy nâu là môi giới truyền hai bệnh virus nan y: Vàng lùn và Lùn xoắn lá.',
+    prevention: 'Thực hiện chương trình "3 giảm 3 tăng", "1 phải 5 giảm". Gieo sạ né rầy đồng loạt theo lịch của ngành nông nghiệp. Bảo vệ thiên địch (bọ xít nước, nhện ăn thịt, bọ ba khoang). Khi mật độ trên 3 con/tép, phun các thuốc đặc trị ức chế lột xác (Pymetrozine, Buprofezin, Triflumezopyrim).'
+  },
+  {
+    cls_id: 6,
+    cls: 'white_backed_plant_hopper',
+    name: 'Rầy lưng trắng (White-backed Plant Hopper)',
+    description: 'Trên mảnh lưng ngực giữa có vệt trắng rõ rệt. Cả con trưởng thành và ấu trùng đều chích hút nhựa cây, làm lá lúa vàng úa, cây còi cọc và lùn tịt. Là véc-tơ truyền bệnh lùn sọc đen hại lúa rất khó cứu chữa.',
+    prevention: 'Chọn giống kháng rầy hoặc giống xác nhận sạch bệnh. Thường xuyên vạch gốc lúa kiểm tra mật độ ổ rầy non. Xử lý thuốc đặc trị lưu dẫn kịp thời ngay khi phát hiện rầy mới nở tuổi 1-2.'
+  },
+  {
+    cls_id: 7,
+    cls: 'small_brown_plant_hopper',
+    name: 'Rầy nâu nhỏ (Small Brown Plant Hopper)',
+    description: 'Kích thước nhỏ hơn rầy nâu thường, cánh trong suốt hoặc có đốm mờ, sinh sống chủ yếu ở các vùng trồng lúa ôn đới và nhiệt đới. Chích hút làm suy kiệt cây lúa và là môi giới truyền bệnh sọc lá virus (Rice Stripe Virus).',
+    prevention: 'Vệ sinh bờ ruộng sạch tàn dư ký chủ vụ trước. Thăm đồng định kỳ và sử dụng bẫy đèn vàng để giám sát mật độ bầy rầy di trú. Phun trừ bằng thuốc ức chế thần kinh côn trùng nhóm neonicotinoid hoặc pymetrozine.'
+  },
+  {
+    cls_id: 8,
+    cls: 'rice_water_weevil',
+    name: 'Súng nước hại lúa / Bọ vòi voi hại lúa (Rice Water Weevil)',
+    description: 'Con trưởng thành là bọ vòi voi màu xám nâu gặm lá non tạo thành các rãnh trắng dọc phiến lá; ấu trùng chui xuống bùn cắn phá rễ lúa làm rễ cụt ngủn, cây lúa còi cọc, vàng úa, dễ đổ ngã và không hấp thụ được dinh dưỡng.',
+    prevention: 'Rút cạn nước ruộng định kỳ (áp dụng tưới ngập khô xen kẽ - AWD) để hạn chế ấu trùng hô hấp và di chuyển dưới bùn. Xử lý hạt giống hoặc rải thuốc hạt xử lý đất khi gieo cấy ở vùng có tiền sử bọ vòi voi gây hại.'
+  },
+  {
+    cls_id: 9,
+    cls: 'rice_leafhopper',
+    name: 'Rầy xanh đuôi đen / Rầy lá lúa (Rice Leafhopper)',
+    description: 'Thân có màu xanh lục sáng, chóp cánh trước có đốm màu đen đặc trưng. Rầy di chuyển nhanh nhẹn, thường bay nhảy trên tán lá chích hút nhựa lá non và là môi giới truyền bệnh vàng lụi Tungro nguy hiểm.',
+    prevention: 'Bảo tồn đàn bọ rùa và ong ký sinh trứng. Dùng vợt bắt bọ xít/rầy lá lúc sáng sớm. Khi mật độ cao đe dọa truyền bệnh virus, phun các loại thuốc có tác dụng tiếp xúc và xông hơi nhanh.'
   }
 ];
 
@@ -70,14 +102,14 @@ export const MOCK_HISTORY: HistoryItem[] = [
     source: 'image',
     filename: 'ruong_lua_lo_a1.jpg',
     total: 4,
-    counts: { 'Rầy nâu': 3, 'Bọ xít dài': 1 },
+    counts: { 'brown_plant_hopper': 3, 'rice_leaf_roller': 1 },
     has_image: true,
     meta: { conf: 0.45, device: 'CUDA:0 (NVIDIA T4)' },
     detections: [
-      { box: [120, 150, 240, 310], cls: 'Rầy nâu', cls_id: 0, conf: 0.88 },
-      { box: [280, 190, 410, 350], cls: 'Rầy nâu', cls_id: 0, conf: 0.79 },
-      { box: [450, 120, 560, 270], cls: 'Rầy nâu', cls_id: 0, conf: 0.65 },
-      { box: [590, 300, 710, 480], cls: 'Bọ xít dài', cls_id: 3, conf: 0.92 },
+      { box: [120, 150, 240, 310], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.88 },
+      { box: [280, 190, 410, 350], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.79 },
+      { box: [450, 120, 560, 270], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.65 },
+      { box: [590, 300, 710, 480], cls: 'rice_leaf_roller', cls_id: 0, conf: 0.92 },
     ]
   },
   {
@@ -86,12 +118,12 @@ export const MOCK_HISTORY: HistoryItem[] = [
     source: 'video',
     filename: 'khao_sat_dong_20261102.mp4',
     total: 12,
-    counts: { 'Sâu cuốn lá': 8, 'Sâu đục thân': 4 },
+    counts: { 'rice_leaf_roller': 8, 'yellow_rice_borer': 4 },
     has_image: false,
     meta: { duration: 45, total_frames: 1350, skip: 3, fps: 30, device: 'CUDA:0 (NVIDIA T4)' },
     detections: [
-      { box: [100, 100, 260, 290], cls: 'Sâu cuốn lá', cls_id: 1, conf: 0.84 },
-      { box: [350, 180, 490, 340], cls: 'Sâu đục thân', cls_id: 2, conf: 0.77 },
+      { box: [100, 100, 260, 290], cls: 'rice_leaf_roller', cls_id: 0, conf: 0.84 },
+      { box: [350, 180, 490, 340], cls: 'yellow_rice_borer', cls_id: 3, conf: 0.77 },
     ]
   },
   {
@@ -100,7 +132,7 @@ export const MOCK_HISTORY: HistoryItem[] = [
     source: 'stream',
     filename: 'webcam_field_live_1.stream',
     total: 6,
-    counts: { 'Bọ trĩ': 4, 'Rầy nâu': 2 },
+    counts: { 'white_backed_plant_hopper': 4, 'brown_plant_hopper': 2 },
     has_image: false,
     meta: { duration: 120, fps: 4 },
   },
@@ -110,39 +142,43 @@ export const MOCK_HISTORY: HistoryItem[] = [
     source: 'image',
     filename: 'mau_la_benh_3.jpg',
     total: 2,
-    counts: { 'Bọ gai': 2 },
+    counts: { 'asiatic_rice_borer': 2 },
     has_image: true,
     meta: { conf: 0.5 },
     detections: [
-      { box: [200, 150, 380, 370], cls: 'Bọ gai', cls_id: 5, conf: 0.91 },
-      { box: [420, 210, 580, 410], cls: 'Bọ gai', cls_id: 5, conf: 0.83 },
+      { box: [200, 150, 380, 370], cls: 'asiatic_rice_borer', cls_id: 2, conf: 0.91 },
+      { box: [420, 210, 580, 410], cls: 'asiatic_rice_borer', cls_id: 2, conf: 0.83 },
     ]
   }
 ];
 
 export const MOCK_STATS: StatsResponse = {
-  records: 48,
+  records: 54,
   by_source: {
-    image: 28,
-    video: 12,
-    stream: 8
+    image: 30,
+    video: 15,
+    stream: 9
   },
   by_class: {
-    'Rầy nâu': 65,
-    'Sâu cuốn lá': 42,
-    'Sâu đục thân': 23,
-    'Bọ xít dài': 18,
-    'Bọ trĩ': 31,
-    'Bọ gai': 14
+    'brown_plant_hopper': 65,
+    'rice_leaf_roller': 48,
+    'yellow_rice_borer': 32,
+    'white_backed_plant_hopper': 28,
+    'asiatic_rice_borer': 21,
+    'rice_gall_midge': 19,
+    'rice_leaf_caterpillar': 16,
+    'small_brown_plant_hopper': 14,
+    'rice_water_weevil': 11,
+    'rice_leafhopper': 25,
   },
   by_day: {
-    '2026-10-28': { 'Rầy nâu': 8, 'Sâu cuốn lá': 4, 'Bọ trĩ': 5 },
-    '2026-10-29': { 'Rầy nâu': 12, 'Sâu cuốn lá': 6, 'Sâu đục thân': 3 },
-    '2026-10-30': { 'Rầy nâu': 15, 'Bọ xít dài': 4, 'Bọ gai': 2 },
-    '2026-10-31': { 'Rầy nâu': 9, 'Sâu cuốn lá': 10, 'Bọ trĩ': 7 },
-    '2026-11-01': { 'Rầy nâu': 11, 'Sâu đục thân': 8, 'Bọ trĩ': 6 },
-    '2026-11-02': { 'Rầy nâu': 7, 'Sâu cuốn lá': 12, 'Bọ xít dài': 5 },
-    '2026-11-03': { 'Rầy nâu': 3, 'Sâu đục thân': 4, 'Bọ gai': 5 }
+    '2026-10-28': { 'brown_plant_hopper': 8, 'rice_leaf_roller': 5, 'white_backed_plant_hopper': 4 },
+    '2026-10-29': { 'brown_plant_hopper': 12, 'rice_leaf_roller': 6, 'yellow_rice_borer': 4 },
+    '2026-10-30': { 'brown_plant_hopper': 15, 'asiatic_rice_borer': 5, 'rice_leaf_caterpillar': 3 },
+    '2026-10-31': { 'brown_plant_hopper': 9, 'rice_leaf_roller': 10, 'rice_gall_midge': 6 },
+    '2026-11-01': { 'brown_plant_hopper': 11, 'yellow_rice_borer': 8, 'white_backed_plant_hopper': 5 },
+    '2026-11-02': { 'brown_plant_hopper': 7, 'rice_leaf_roller': 12, 'rice_leafhopper': 8 },
+    '2026-11-03': { 'brown_plant_hopper': 3, 'asiatic_rice_borer': 4, 'rice_water_weevil': 4 }
   }
 };
 
@@ -165,44 +201,44 @@ export function createMockJob(): string {
     id: jobId,
     progress: 0.05,
     status: 'processing',
-    counts: { 'Rầy nâu': 5, 'Sâu cuốn lá': 3, 'Bọ xít dài': 2 },
+    counts: { 'brown_plant_hopper': 5, 'rice_leaf_roller': 3, 'yellow_rice_borer': 2 },
     frames: [
       {
         frame: 30,
         time: 1.0,
         detections: [
-          { box: [150, 120, 290, 280], cls: 'Rầy nâu', cls_id: 0, conf: 0.88 },
-          { box: [400, 200, 520, 340], cls: 'Sâu cuốn lá', cls_id: 1, conf: 0.79 },
+          { box: [150, 120, 290, 280], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.88 },
+          { box: [400, 200, 520, 340], cls: 'rice_leaf_roller', cls_id: 0, conf: 0.79 },
         ]
       },
       {
         frame: 90,
         time: 3.0,
         detections: [
-          { box: [220, 180, 360, 340], cls: 'Rầy nâu', cls_id: 0, conf: 0.91 },
+          { box: [220, 180, 360, 340], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.91 },
         ]
       },
       {
         frame: 150,
         time: 5.0,
         detections: [
-          { box: [100, 90, 240, 260], cls: 'Bọ xít dài', cls_id: 3, conf: 0.85 },
-          { box: [380, 160, 510, 310], cls: 'Sâu cuốn lá', cls_id: 1, conf: 0.74 },
+          { box: [100, 90, 240, 260], cls: 'yellow_rice_borer', cls_id: 3, conf: 0.85 },
+          { box: [380, 160, 510, 310], cls: 'rice_leaf_roller', cls_id: 0, conf: 0.74 },
         ]
       },
       {
         frame: 240,
         time: 8.0,
         detections: [
-          { box: [180, 140, 310, 290], cls: 'Rầy nâu', cls_id: 0, conf: 0.82 },
-          { box: [450, 220, 580, 380], cls: 'Rầy nâu', cls_id: 0, conf: 0.76 },
+          { box: [180, 140, 310, 290], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.82 },
+          { box: [450, 220, 580, 380], cls: 'brown_plant_hopper', cls_id: 5, conf: 0.76 },
         ]
       },
       {
         frame: 360,
         time: 12.0,
         detections: [
-          { box: [300, 170, 440, 320], cls: 'Bọ xít dài', cls_id: 3, conf: 0.90 },
+          { box: [300, 170, 440, 320], cls: 'yellow_rice_borer', cls_id: 3, conf: 0.90 },
         ]
       }
     ],
@@ -245,12 +281,18 @@ export function getMockJobStatus(jobId: string): JobResponse {
 }
 
 export function generateMockImagePrediction(width = 800, height = 600): PredictResponse {
-  // Randomly pick 1 to 4 detections
+  // Pick from the user's 10 classes
   const possibleClasses = [
-    { id: 0, name: 'Rầy nâu' },
-    { id: 1, name: 'Sâu cuốn lá' },
-    { id: 2, name: 'Sâu đục thân' },
-    { id: 3, name: 'Bọ xít dài' },
+    { id: 0, name: 'rice_leaf_roller' },
+    { id: 1, name: 'rice_leaf_caterpillar' },
+    { id: 2, name: 'asiatic_rice_borer' },
+    { id: 3, name: 'yellow_rice_borer' },
+    { id: 4, name: 'rice_gall_midge' },
+    { id: 5, name: 'brown_plant_hopper' },
+    { id: 6, name: 'white_backed_plant_hopper' },
+    { id: 7, name: 'small_brown_plant_hopper' },
+    { id: 8, name: 'rice_water_weevil' },
+    { id: 9, name: 'rice_leafhopper' },
   ];
 
   const count = Math.floor(Math.random() * 3) + 1;
@@ -284,4 +326,3 @@ export function generateMockImagePrediction(width = 800, height = 600): PredictR
     detections,
   };
 }
-

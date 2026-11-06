@@ -41,36 +41,20 @@ Frontend Web Application hoàn chỉnh cho đề tài **"Nhận diện và phân
 
 ---
 
-## 📖 Bảng Đối Chiếu 1-1 Tên Các Nhóm Sâu Bệnh Hại Lúa (English <-> Tiếng Việt)
+## 📖 Bảng Đối Chiếu 1-1 Chuẩn 10 Nhóm Sâu Bệnh Hại Lúa (YOLOv11 Dataset)
 
-| STT | Tên Tiếng Việt | English Common Name | Tên Khoa Học (Scientific) | Mã Lớp (Class Key) |
+| STT | Mã Lớp (Class Key) | Tên Tiếng Việt Chuẩn | English Name | Tên Khoa Học (Scientific) |
 |:---:|:---|:---|:---|:---|
-| 1 | **Rầy nâu** | Brown Planthopper | *Nilaparvata lugens* | `brown_planthopper` / `ray_nau` |
-| 2 | **Sâu cuốn lá** | Rice Leaf Roller (Leaf Folder) | *Cnaphalocrocis medinalis* | `rice_leaf_roller` / `sau_cuon_la` |
-| 3 | **Sâu đục thân 2 chấm** | Yellow Stem Borer | *Scirpophaga incertulas* | `yellow_stem_borer` / `sau_duc_than` |
-| 4 | **Bọ xít dài (Bọ xít hôi)** | Rice Bug (Slender Rice Bug) | *Leptocorisa acuta* | `rice_bug` / `bo_xit_dai` |
-| 5 | **Bọ trĩ lúa** | Rice Thrips | *Stenchaetothrips biformis* | `rice_thrips` / `bo_tri` |
-| 6 | **Bọ gai** | Rice Hispa | *Dicladispa armigera* | `rice_hispa` / `bo_gai` |
-| 7 | **Rầy lưng trắng** | White-backed Planthopper | *Sogatella furcifera* | `whitebacked_planthopper` |
-| 8 | **Rầy xanh đuôi đen** | Green Leafhopper | *Nephotettix virescens* | `green_leafhopper` |
-| 9 | **Sâu đục thân 5 vạch** | Striped Stem Borer | *Chilo suppressalis* | `striped_stem_borer` |
-| 10 | **Sâu đục thân bướm cú** | Pink Stem Borer | *Sesamia inferens* | `pink_stem_borer` |
-| 11 | **Sâu đục thân bướm trắng**| White Stem Borer | *Scirpophaga innotata* | `white_stem_borer` |
-| 12 | **Muỗi hành (Sâu năn)** | Rice Gall Midge | *Orseolia oryzae* | `rice_gall_midge` |
-| 13 | **Sâu phao** | Rice Caseworm | *Parapoynx stagnalis* | `rice_caseworm` |
-| 14 | **Sâu cắn gié** | Rice Armyworm | *Mythimna separata* | `rice_armyworm` |
-| 15 | **Rầy lá lúa** | Rice Leafhopper | *Cicadellidae* | `rice_leafhopper` |
-| 16 | **Mọt nước hại lúa** | Rice Water Weevil | *Lissorhoptrus oryzophilus* | `rice_water_weevil` |
-| 17 | **Châu chấu hại lúa** | Rice Grasshopper | *Oxya chinensis* | `rice_grasshopper` |
-| 18 | **Dế dũi** | Mole Cricket | *Gryllotalpa orientalis* | `mole_cricket` |
-| 19 | **Bướm nhảy hại lúa** | Rice Skipper | *Parnara guttata* | `rice_skipper` |
-| 20 | **Ốc bươu vàng** | Golden Apple Snail | *Pomacea canaliculata* | `golden_apple_snail` |
-| 21 | **Bệnh Đạo ôn** | Rice Blast | *Magnaporthe oryzae* | `rice_blast` |
-| 22 | **Bệnh Bạc lá (Cháy bìa lá)**| Bacterial Leaf Blight | *Xanthomonas oryzae* | `bacterial_leaf_blight` |
-| 23 | **Bệnh Khô vằn (Đốm vằn)**| Sheath Blight | *Rhizoctonia solani* | `sheath_blight` |
-| 24 | **Bệnh Đốm nâu** | Brown Spot | *Bipolaris oryzae* | `brown_spot` |
-| 25 | **Bệnh Vàng lụi** | Rice Tungro Virus | *Rice tungro virus* | `rice_tungro` |
-| 26 | **Bệnh Than vàng** | False Smut | *Ustilaginoidea virens* | `false_smut` |
+| 1 | `rice_leaf_roller` | **Sâu cuốn lá lúa** | Rice Leaf Roller | *Cnaphalocrocis medinalis* |
+| 2 | `rice_leaf_caterpillar` | **Sâu đo lúa / Sâu ăn lá lúa** | Rice Leaf Caterpillar | *Naranga aenescens* |
+| 3 | `asiatic_rice_borer` | **Sâu đục thân 5 vạch kẻ đầu nâu (Sâu đục thân châu Á)** | Asiatic Rice Borer | *Chilo suppressalis* |
+| 4 | `yellow_rice_borer` | **Sâu đục thân bướm 2 chấm (Sâu đục thân màu vàng)** | Yellow Rice Borer | *Scirpophaga incertulas* |
+| 5 | `rice_gall_midge` | **Muỗi hành (Muỗi đầu nguyễn)** | Rice Gall Midge | *Orseolia oryzae* |
+| 6 | `brown_plant_hopper` | **Rầy nâu** | Brown Plant Hopper | *Nilaparvata lugens* |
+| 7 | `white_backed_plant_hopper` | **Rầy lưng trắng** | White-backed Plant Hopper | *Sogatella furcifera* |
+| 8 | `small_brown_plant_hopper` | **Rầy nâu nhỏ** | Small Brown Plant Hopper | *Laodelphax striatellus* |
+| 9 | `rice_water_weevil` | **Súng nước hại lúa (Bọ vòi voi hại lúa)** | Rice Water Weevil | *Lissorhoptrus oryzophilus* |
+| 10 | `rice_leafhopper` | **Rầy xanh đuôi đen (Rầy lá lúa nói chung)** | Rice Leafhopper | *Nephotettix virescens* |
 
 ---
 

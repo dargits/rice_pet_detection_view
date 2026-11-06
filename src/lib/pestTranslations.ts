@@ -1,4 +1,5 @@
-// 1:1 Translation Dictionary for Rice Pests and Diseases (English <-> Vietnamese)
+// 1:1 Translation Dictionary for Rice Pests (English <-> Vietnamese)
+// Specifically standardized according to the user's 10-class YOLOv11 dataset
 
 export interface PestTranslationEntry {
   id?: number;
@@ -6,216 +7,190 @@ export interface PestTranslationEntry {
   en: string;               // English common name
   vi: string;               // Vietnamese standard name
   scientific?: string;      // Scientific name
+  aliases?: string[];       // Other common keys or names from model/datasets
   category?: 'pest' | 'disease';
 }
 
 export const PEST_DICTIONARY: PestTranslationEntry[] = [
   {
     id: 0,
-    key: 'brown_planthopper',
-    en: 'Brown Planthopper',
-    vi: 'Rầy nâu',
-    scientific: 'Nilaparvata lugens',
+    key: 'rice_leaf_roller',
+    en: 'Rice Leaf Roller',
+    vi: 'Sâu cuốn lá lúa',
+    scientific: 'Cnaphalocrocis medinalis',
+    aliases: ['rice_leafroller', 'leaf_roller', 'leaf_folder', 'sau_cuon_la', 'sau_cuon_la_lua'],
     category: 'pest',
   },
   {
     id: 1,
-    key: 'rice_leaf_roller',
-    en: 'Rice Leaf Roller',
-    vi: 'Sâu cuốn lá',
-    scientific: 'Cnaphalocrocis medinalis',
+    key: 'rice_leaf_caterpillar',
+    en: 'Rice Leaf Caterpillar',
+    vi: 'Sâu đo lúa / Sâu ăn lá lúa',
+    scientific: 'Naranga aenescens',
+    aliases: ['rice_leafcaterpillar', 'leaf_caterpillar', 'caterpillar', 'sau_do_lua', 'sau_an_la_lua'],
     category: 'pest',
   },
   {
     id: 2,
-    key: 'yellow_stem_borer',
-    en: 'Yellow Stem Borer',
-    vi: 'Sâu đục thân 2 chấm',
-    scientific: 'Scirpophaga incertulas',
+    key: 'asiatic_rice_borer',
+    en: 'Asiatic Rice Borer',
+    vi: 'Sâu đục thân 5 vạch kẻ đầu nâu (Sâu đục thân châu Á)',
+    scientific: 'Chilo suppressalis',
+    aliases: ['striped_stem_borer', 'striped_rice_borer', 'sau_duc_than_5_vach', 'sau_duc_than_chau_a'],
     category: 'pest',
   },
   {
     id: 3,
-    key: 'rice_bug',
-    en: 'Rice Bug (Slender Rice Bug)',
-    vi: 'Bọ xít dài (Bọ xít hôi)',
-    scientific: 'Leptocorisa acuta',
+    key: 'yellow_rice_borer',
+    en: 'Yellow Rice Borer',
+    vi: 'Sâu đục thân bướm 2 chấm (Sâu đục thân màu vàng)',
+    scientific: 'Scirpophaga incertulas',
+    aliases: ['yellow_stem_borer', 'rice_stem_borer', 'stem_borer', 'sau_duc_than_buom_2_cham', 'sau_duc_than'],
     category: 'pest',
   },
   {
     id: 4,
-    key: 'rice_thrips',
-    en: 'Rice Thrips',
-    vi: 'Bọ trĩ lúa',
-    scientific: 'Stenchaetothrips biformis',
+    key: 'rice_gall_midge',
+    en: 'Rice Gall Midge',
+    vi: 'Muỗi hành (Muỗi đầu nguyễn)',
+    scientific: 'Orseolia oryzae',
+    aliases: ['rice_gallmidge', 'gall_midge', 'muoi_hanh', 'sau_nan'],
     category: 'pest',
   },
   {
     id: 5,
-    key: 'rice_hispa',
-    en: 'Rice Hispa',
-    vi: 'Bọ gai',
-    scientific: 'Dicladispa armigera',
+    key: 'brown_plant_hopper',
+    en: 'Brown Plant Hopper',
+    vi: 'Rầy nâu',
+    scientific: 'Nilaparvata lugens',
+    aliases: ['brown_planthopper', 'bph', 'ray_nau'],
     category: 'pest',
   },
   {
     id: 6,
-    key: 'whitebacked_planthopper',
-    en: 'White-backed Planthopper',
+    key: 'white_backed_plant_hopper',
+    en: 'White-backed Plant Hopper',
     vi: 'Rầy lưng trắng',
     scientific: 'Sogatella furcifera',
+    aliases: ['whitebacked_planthopper', 'white_backed_planthopper', 'wbph', 'ray_lung_trang'],
     category: 'pest',
   },
   {
     id: 7,
-    key: 'green_leafhopper',
-    en: 'Green Leafhopper',
-    vi: 'Rầy xanh đuôi đen',
-    scientific: 'Nephotettix virescens',
+    key: 'small_brown_plant_hopper',
+    en: 'Small Brown Plant Hopper',
+    vi: 'Rầy nâu nhỏ',
+    scientific: 'Laodelphax striatellus',
+    aliases: ['small_brown_planthopper', 'sbph', 'ray_nau_nho'],
     category: 'pest',
   },
   {
     id: 8,
-    key: 'striped_stem_borer',
-    en: 'Striped Stem Borer',
-    vi: 'Sâu đục thân 5 vạch',
-    scientific: 'Chilo suppressalis',
+    key: 'rice_water_weevil',
+    en: 'Rice Water Weevil',
+    vi: 'Súng nước hại lúa (Bọ vòi voi hại lúa)',
+    scientific: 'Lissorhoptrus oryzophilus',
+    aliases: ['water_weevil', 'rice_weevil', 'sung_nuoc_hai_lua', 'bo_voi_voi_hai_lua'],
     category: 'pest',
   },
   {
     id: 9,
-    key: 'pink_stem_borer',
-    en: 'Pink Stem Borer',
-    vi: 'Sâu đục thân bướm cú',
-    scientific: 'Sesamia inferens',
+    key: 'rice_leafhopper',
+    en: 'Rice Leafhopper',
+    vi: 'Rầy xanh đuôi đen (Rầy lá lúa nói chung)',
+    scientific: 'Nephotettix virescens',
+    aliases: ['green_leafhopper', 'rice_leaf_hopper', 'leafhopper', 'ray_xanh_duoi_den', 'ray_la_lua'],
     category: 'pest',
   },
+  // Additional rice pests and diseases for broad compatibility
   {
     id: 10,
-    key: 'white_stem_borer',
-    en: 'White Stem Borer',
-    vi: 'Sâu đục thân bướm trắng',
-    scientific: 'Scirpophaga innotata',
+    key: 'rice_bug',
+    en: 'Rice Bug',
+    vi: 'Bọ xít dài (Bọ xít hôi)',
+    scientific: 'Leptocorisa acuta',
+    aliases: ['stink_bug', 'slender_rice_bug', 'bo_xit_dai'],
     category: 'pest',
   },
   {
     id: 11,
-    key: 'rice_gall_midge',
-    en: 'Rice Gall Midge',
-    vi: 'Muỗi hành (Sâu năn)',
-    scientific: 'Orseolia oryzae',
+    key: 'rice_thrips',
+    en: 'Rice Thrips',
+    vi: 'Bọ trĩ lúa',
+    scientific: 'Stenchaetothrips biformis',
+    aliases: ['thrips', 'bo_tri'],
     category: 'pest',
   },
   {
     id: 12,
-    key: 'rice_caseworm',
-    en: 'Rice Caseworm',
-    vi: 'Sâu phao',
-    scientific: 'Parapoynx stagnalis',
+    key: 'rice_hispa',
+    en: 'Rice Hispa',
+    vi: 'Bọ gai',
+    scientific: 'Dicladispa armigera',
+    aliases: ['hispa', 'bo_gai'],
     category: 'pest',
   },
   {
     id: 13,
-    key: 'rice_armyworm',
-    en: 'Rice Armyworm',
-    vi: 'Sâu cắn gié',
-    scientific: 'Mythimna separata',
+    key: 'rice_caseworm',
+    en: 'Rice Caseworm',
+    vi: 'Sâu phao',
+    scientific: 'Parapoynx stagnalis',
+    aliases: ['caseworm', 'sau_phao'],
     category: 'pest',
   },
   {
     id: 14,
-    key: 'rice_leafhopper',
-    en: 'Rice Leafhopper',
-    vi: 'Rầy lá lúa',
-    scientific: 'Cicadellidae',
+    key: 'rice_armyworm',
+    en: 'Rice Armyworm',
+    vi: 'Sâu cắn gié',
+    scientific: 'Mythimna separata',
+    aliases: ['armyworm', 'sau_can_gie'],
     category: 'pest',
   },
   {
     id: 15,
-    key: 'rice_water_weevil',
-    en: 'Rice Water Weevil',
-    vi: 'Mọt nước hại lúa',
-    scientific: 'Lissorhoptrus oryzophilus',
-    category: 'pest',
-  },
-  {
-    id: 16,
     key: 'rice_grasshopper',
     en: 'Rice Grasshopper',
     vi: 'Châu chấu hại lúa',
     scientific: 'Oxya chinensis',
+    aliases: ['grasshopper', 'chau_chau'],
     category: 'pest',
   },
   {
-    id: 17,
-    key: 'mole_cricket',
-    en: 'Mole Cricket',
-    vi: 'Dế dũi',
-    scientific: 'Gryllotalpa orientalis',
-    category: 'pest',
-  },
-  {
-    id: 18,
-    key: 'rice_skipper',
-    en: 'Rice Skipper',
-    vi: 'Bướm nhảy hại lúa',
-    scientific: 'Parnara guttata',
-    category: 'pest',
-  },
-  {
-    id: 19,
+    id: 16,
     key: 'golden_apple_snail',
     en: 'Golden Apple Snail',
     vi: 'Ốc bươu vàng',
     scientific: 'Pomacea canaliculata',
+    aliases: ['snail', 'oc_buou_vang'],
     category: 'pest',
   },
   {
-    id: 20,
+    id: 17,
     key: 'rice_blast',
     en: 'Rice Blast',
     vi: 'Bệnh Đạo ôn',
     scientific: 'Magnaporthe oryzae',
+    aliases: ['blast', 'benh_dao_on'],
     category: 'disease',
   },
   {
-    id: 21,
+    id: 18,
     key: 'bacterial_leaf_blight',
     en: 'Bacterial Leaf Blight',
     vi: 'Bệnh Bạc lá (Cháy bìa lá)',
     scientific: 'Xanthomonas oryzae',
+    aliases: ['leaf_blight', 'bac_la'],
     category: 'disease',
   },
   {
-    id: 22,
+    id: 19,
     key: 'sheath_blight',
     en: 'Sheath Blight',
     vi: 'Bệnh Khô vằn (Đốm vằn)',
     scientific: 'Rhizoctonia solani',
-    category: 'disease',
-  },
-  {
-    id: 23,
-    key: 'brown_spot',
-    en: 'Brown Spot',
-    vi: 'Bệnh Đốm nâu',
-    scientific: 'Bipolaris oryzae',
-    category: 'disease',
-  },
-  {
-    id: 24,
-    key: 'rice_tungro',
-    en: 'Rice Tungro Virus',
-    vi: 'Bệnh Vàng lụi (Tungro)',
-    scientific: 'Rice tungro virus',
-    category: 'disease',
-  },
-  {
-    id: 25,
-    key: 'false_smut',
-    en: 'False Smut',
-    vi: 'Bệnh Than vàng (Thoa lôi)',
-    scientific: 'Ustilaginoidea virens',
+    aliases: ['kho_van'],
     category: 'disease',
   },
 ];
@@ -263,20 +238,21 @@ export function findPestEntry(
   const cleaned = cleanStr(str);
   const noAccentCleaned = cleanStr(removeAccents(str));
 
-  // Direct exact match
+  // 2. Direct exact match by key, en, vi, or aliases
   for (const item of PEST_DICTIONARY) {
     if (
       item.key === cleaned ||
       item.en.toLowerCase() === lower ||
       item.vi.toLowerCase() === lower ||
       cleanStr(removeAccents(item.vi)) === noAccentCleaned ||
-      cleanStr(item.en) === cleaned
+      cleanStr(item.en) === cleaned ||
+      item.aliases?.some((a) => cleanStr(a) === cleaned || cleanStr(a) === noAccentCleaned)
     ) {
       return item;
     }
   }
 
-  // Substring match
+  // 3. Substring match
   for (const item of PEST_DICTIONARY) {
     const viNoAcc = cleanStr(removeAccents(item.vi));
     const enClean = cleanStr(item.en);
@@ -286,30 +262,53 @@ export function findPestEntry(
       enClean.includes(cleaned) ||
       cleaned.includes(enClean) ||
       viNoAcc.includes(noAccentCleaned) ||
-      noAccentCleaned.includes(viNoAcc)
+      noAccentCleaned.includes(viNoAcc) ||
+      item.aliases?.some((a) => cleaned.includes(cleanStr(a)) || cleanStr(a).includes(cleaned))
     ) {
       return item;
     }
   }
 
-  // Handle common aliases
-  if (cleaned.includes('stem_borer') || noAccentCleaned.includes('duc_than')) {
-    return PEST_DICTIONARY[2]; // Sâu đục thân
+  // 4. Fallback heuristics for the 10 specific classes
+  // a) small brown plant hopper
+  if (cleaned.includes('small') && (cleaned.includes('hopper') || noAccentCleaned.includes('ray'))) {
+    return PEST_DICTIONARY[7]; // small_brown_plant_hopper
   }
-  if (cleaned.includes('leaf_roller') || cleaned.includes('leaf_folder') || noAccentCleaned.includes('cuon_la')) {
-    return PEST_DICTIONARY[1]; // Sâu cuốn lá
+  // b) white backed plant hopper
+  if (cleaned.includes('white') && (cleaned.includes('hopper') || noAccentCleaned.includes('lung_trang'))) {
+    return PEST_DICTIONARY[6]; // white_backed_plant_hopper
   }
-  if (cleaned.includes('planthopper') || noAccentCleaned.includes('ray_nau')) {
-    return PEST_DICTIONARY[0]; // Rầy nâu
+  // c) brown plant hopper
+  if ((cleaned.includes('brown') && cleaned.includes('hopper')) || noAccentCleaned.includes('ray_nau')) {
+    return PEST_DICTIONARY[5]; // brown_plant_hopper
   }
-  if (cleaned.includes('stink_bug') || cleaned.includes('rice_bug') || noAccentCleaned.includes('bo_xit')) {
-    return PEST_DICTIONARY[3]; // Bọ xít
+  // d) leafhopper / green leafhopper
+  if (cleaned.includes('leafhopper') || noAccentCleaned.includes('ray_xanh')) {
+    return PEST_DICTIONARY[9]; // rice_leafhopper
   }
-  if (cleaned.includes('thrip') || noAccentCleaned.includes('bo_tri')) {
-    return PEST_DICTIONARY[4]; // Bọ trĩ
+  // e) rice water weevil
+  if (cleaned.includes('weevil') || noAccentCleaned.includes('sung_nuoc') || noAccentCleaned.includes('voi_voi')) {
+    return PEST_DICTIONARY[8]; // rice_water_weevil
   }
-  if (cleaned.includes('hispa') || noAccentCleaned.includes('bo_gai')) {
-    return PEST_DICTIONARY[5]; // Bọ gai
+  // f) gall midge
+  if (cleaned.includes('midge') || noAccentCleaned.includes('muoi_hanh')) {
+    return PEST_DICTIONARY[4]; // rice_gall_midge
+  }
+  // g) yellow rice borer
+  if (cleaned.includes('yellow') && (cleaned.includes('borer') || noAccentCleaned.includes('duc_than'))) {
+    return PEST_DICTIONARY[3]; // yellow_rice_borer
+  }
+  // h) asiatic rice borer
+  if (cleaned.includes('asiatic') || cleaned.includes('striped') || noAccentCleaned.includes('5_vach') || noAccentCleaned.includes('chau_a')) {
+    return PEST_DICTIONARY[2]; // asiatic_rice_borer
+  }
+  // i) leaf caterpillar
+  if (cleaned.includes('caterpillar') || noAccentCleaned.includes('sau_do') || noAccentCleaned.includes('an_la')) {
+    return PEST_DICTIONARY[1]; // rice_leaf_caterpillar
+  }
+  // j) leaf roller
+  if (cleaned.includes('roller') || cleaned.includes('folder') || noAccentCleaned.includes('cuon_la')) {
+    return PEST_DICTIONARY[0]; // rice_leaf_roller
   }
 
   return null;
@@ -319,9 +318,9 @@ export type PestLanguageOption = 'vi' | 'en' | 'both';
 
 /**
  * Returns formatted pest display name based on user's chosen language:
- * - 'vi': "Rầy nâu"
- * - 'en': "Brown Planthopper"
- * - 'both': "Rầy nâu (Brown Planthopper)"
+ * - 'vi': "Sâu cuốn lá lúa"
+ * - 'en': "Rice Leaf Roller"
+ * - 'both': "Sâu cuốn lá lúa (Rice Leaf Roller)"
  */
 export function getPestDisplayName(
   rawInput: string | number,
@@ -342,4 +341,3 @@ export function getPestDisplayName(
   }
   return entry.vi;
 }
-
