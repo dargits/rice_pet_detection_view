@@ -18,12 +18,30 @@ export interface HealthResponse {
   auth_required?: boolean;
 }
 
+export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+
 export interface PestInfo {
   cls_id: number;
   cls: string;
   name: string;
   description: string;
   prevention: string;
+  scientific?: string;
+  enName?: string;
+  severity?: SeverityLevel;
+  damageStages?: string[];
+  naturalEnemies?: string[];
+  symptoms?: string;
+  chemicals?: string[];
+}
+
+export interface RiskAssessment {
+  level: 'safe' | 'low' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  color: string;
+  bg: string;
+  recommendedAction: string;
 }
 
 export interface PredictResponse {
@@ -105,3 +123,10 @@ export interface ToastMessage {
   message?: string;
 }
 
+export interface CanvasDisplaySettings {
+  showLabels: boolean;
+  showConfidence: boolean;
+  filterClass: string; // 'all' or specific class key
+  selectedBoxIndex: number | null;
+  hoveredBoxIndex: number | null;
+}

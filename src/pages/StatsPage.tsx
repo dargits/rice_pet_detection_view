@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { fetchStats } from '../lib/api';
 import { StatsResponse } from '../types';
 import { getClassColor, SOURCE_COLORS, SOURCE_LABELS } from '../lib/colors';
+import { findPestEntry } from '../lib/pestTranslations';
 import {
   BarChart,
   Bar,
@@ -27,12 +28,17 @@ import {
   TrendingUp,
   PieChart as PieChartIcon,
   Calendar,
+  ShieldCheck,
+  ShieldAlert,
+  HeartPulse,
+  Filter,
 } from 'lucide-react';
 
 export const StatsPage: React.FC = () => {
   const { addToast, getPestName } = useConfig();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [timeFilter, setTimeFilter] = useState<'all' | '7d' | '30d'>('all');
 
   const loadStats = async () => {
     setLoading(true);
@@ -53,58 +59,112 @@ export const StatsPage: React.FC = () => {
   // Calculate metrics
   const totalRecords: number = stats?.records || 0;
 
-  const classCounts: [string, number][] = stats?.by_class
-    ? Object.entries(stats.by_class).map(([k, v]) => [k, Number(v)])
-    : [];
+  const classCounts: [string, number][] = useMemo(() => {
+    return stats?.by_class
+      ? Object.entries(stats.by_class).map(([k, v]) => [k, Number(v)])
+      : [];
+  }, [stats?.by_class]);
 
-  const totalDetections: number = classCounts.reduce((acc, curr) => acc + curr[1], 0);
+  const totalDetections: number = useMemo(() => {
+    return classCounts.reduce((acc, curr) => acc + curr[1], 0);
+  }, [classCounts]);
 
-  const mostFrequentPest = classCounts.length > 0
-    ? [...classCounts].sort((a, b) => b[1] - a[1])[0]
-    : null;
+  const mostFrequentPest = useMemo(() => {
+    return classCounts.length > 0
+      ? [...classCounts].sort((a, b) => b[1] - a[1])[0]
+      : null;
+  }, [classCounts]);
+
+  // Rice Field Health Index (0 - 100)
+  // Higher pest density & critical pest presence reduces the health score
+  const fieldHealthScore = useMemo(() => {
+    if (totalRecords === 0) return 95;
+    const avgPests = totalDetections / totalRecords;
+
+    // Severity weighting
+    let dangerPenalty = 0;
+    classCounts.forEach(([name, count]) => {
+      const entry = findPestEntry(name);
+      if (entry?.severity === 'critical') dangerPenalty += count * 4;
+      else if (entry?.severity === 'high') dangerPenalty += count * 2;
+      else dangerPenalty += count * 0.8;
+    });
+
+    const scaledPenalty = Math.min(85, (dangerPenalty / totalRecords) * 12);
+    return Math.max(15, Math.round(100 - scaledPenalty));
+  }, [totalRecords, totalDetections, classCounts]);
+
+  // Breakdown by severity
+  const severityBreakdown = useMemo(() => {
+    let critical = 0;
+    let high = 0;
+    let medium = 0;
+
+    classCounts.forEach(([name, count]) => {
+      const entry = findPestEntry(name);
+      if (entry?.severity === 'critical') critical += count;
+      else if (entry?.severity === 'high') high += count;
+      else medium += count;
+    });
+
+    return { critical, high, medium };
+  }, [classCounts]);
 
   // Prepare chart data for by_class
-  const classChartData = classCounts
-    .map(([name, count]) => ({
-      name: getPestName(name),
-      rawName: name,
-      count,
-      fill: getClassColor(name).stroke,
-    }))
-    .sort((a, b) => b.count - a.count);
+  const classChartData = useMemo(() => {
+    return classCounts
+      .map(([name, count]) => ({
+        name: getPestName(name),
+        rawName: name,
+        count,
+        fill: getClassColor(name).stroke,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [classCounts, getPestName]);
 
   // Prepare chart data for by_source
-  const sourceChartData = stats?.by_source
-    ? Object.entries(stats.by_source).map(([src, count]) => ({
-        name: SOURCE_LABELS[src] || src,
-        count: Number(count),
-        color: SOURCE_COLORS[src] || '#64748b',
-      }))
-    : [];
+  const sourceChartData = useMemo(() => {
+    return stats?.by_source
+      ? Object.entries(stats.by_source).map(([src, count]) => ({
+          name: SOURCE_LABELS[src] || src,
+          count: Number(count),
+          color: SOURCE_COLORS[src] || '#64748b',
+        }))
+      : [];
+  }, [stats?.by_source]);
 
-  // Prepare chart data for by_day
-  const dayChartData = stats?.by_day
-    ? Object.entries(stats.by_day)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([day, classes]) => {
-          const classObj = classes as Record<string, number>;
-          const totalInDay = Object.values(classObj).reduce((sum, c) => sum + Number(c), 0);
-          return {
-            day: day.replace(/^\d{4}-/, ''), // MM-DD
-            fullDate: day,
-            total: totalInDay,
-            ...classObj,
-          };
-        })
-    : [];
+  // Prepare chart data for by_day with filter
+  const dayChartData = useMemo(() => {
+    if (!stats?.by_day) return [];
 
-  const allSpeciesInDays = Array.from(
-    new Set(
-      Object.values(stats?.by_day || {}).flatMap((dayObj) =>
-        Object.keys(dayObj as Record<string, number>)
+    let entries = Object.entries(stats.by_day).sort((a, b) => a[0].localeCompare(b[0]));
+    if (timeFilter === '7d') {
+      entries = entries.slice(-7);
+    } else if (timeFilter === '30d') {
+      entries = entries.slice(-30);
+    }
+
+    return entries.map(([day, classes]) => {
+      const classObj = classes as Record<string, number>;
+      const totalInDay = Object.values(classObj).reduce((sum, c) => sum + Number(c), 0);
+      return {
+        day: day.replace(/^\d{4}-/, ''), // MM-DD
+        fullDate: day,
+        total: totalInDay,
+        ...classObj,
+      };
+    });
+  }, [stats?.by_day, timeFilter]);
+
+  const allSpeciesInDays = useMemo(() => {
+    return Array.from(
+      new Set(
+        Object.values(stats?.by_day || {}).flatMap((dayObj) =>
+          Object.keys(dayObj as Record<string, number>)
+        )
       )
-    )
-  );
+    );
+  }, [stats?.by_day]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -129,6 +189,118 @@ export const StatsPage: React.FC = () => {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới số liệu</span>
         </button>
+      </div>
+
+      {/* VIP Health Index & Severity Breakdown Row */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* Field Health Score Card (Col 6) */}
+        <div className="md:col-span-6 p-5 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-500/20 shadow-sm flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-600 text-white">
+                <HeartPulse className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  Chỉ số Sức khỏe Ruộng Lúa (Field Health Index)
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Ước tính tự động dựa trên tần suất rầy nâu, sâu đục thân và mật độ dịch hại
+                </p>
+              </div>
+            </div>
+            <span
+              className={`text-2xl font-mono font-black ${
+                fieldHealthScore >= 75
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : fieldHealthScore >= 50
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              {fieldHealthScore}/100
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-300/40 dark:border-slate-700">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  fieldHealthScore >= 75
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    : fieldHealthScore >= 50
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                    : 'bg-gradient-to-r from-rose-600 to-red-400'
+                }`}
+                style={{ width: `${fieldHealthScore}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span>0 (Dịch hại nghiêm trọng)</span>
+              <span>
+                {fieldHealthScore >= 75
+                  ? '🌱 Trạng thái an toàn'
+                  : fieldHealthScore >= 50
+                  ? '⚠️ Cần giám sát chặt chẽ'
+                  : '🚨 Cảnh báo bùng phát dịch'}
+              </span>
+              <span>100 (Ruộng khỏe mạnh)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Severity Classification (Col 6) */}
+        <div className="md:col-span-6 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-amber-500" />
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                Phân bổ theo Mức độ Nguy hại Dịch bệnh
+              </h3>
+            </div>
+            <span className="text-xs text-slate-400 font-mono">
+              {totalDetections} cá thể
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-rose-700 dark:text-rose-400 block">
+                Nguy cấp (Critical)
+              </span>
+              <span className="text-xl font-extrabold text-rose-900 dark:text-rose-200 font-mono block mt-1">
+                {severityBreakdown.critical}
+              </span>
+              <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80">
+                Rầy nâu, Muỗi hành...
+              </span>
+            </div>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-amber-700 dark:text-amber-400 block">
+                Nguy cơ cao (High)
+              </span>
+              <span className="text-xl font-extrabold text-amber-900 dark:text-amber-200 font-mono block mt-1">
+                {severityBreakdown.high}
+              </span>
+              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80">
+                Sâu cuốn lá, Rầy trắng...
+              </span>
+            </div>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-blue-700 dark:text-blue-400 block">
+                Trung bình (Medium)
+              </span>
+              <span className="text-xl font-extrabold text-blue-900 dark:text-blue-200 font-mono block mt-1">
+                {severityBreakdown.medium}
+              </span>
+              <span className="text-[10px] text-blue-600/80 dark:text-blue-400/80">
+                Sâu đo, Rầy xanh...
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -210,9 +382,9 @@ export const StatsPage: React.FC = () => {
                 <YAxis tick={{ fontSize: 11, fill: '#888888' }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderRadius: '0.75rem',
-                    border: 'none',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#fff',
                     fontSize: '12px',
                   }}
@@ -255,9 +427,9 @@ export const StatsPage: React.FC = () => {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderRadius: '0.75rem',
-                    border: 'none',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#fff',
                     fontSize: '12px',
                   }}
@@ -274,13 +446,34 @@ export const StatsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Area / Trend Chart: By Day (Col 12) */}
+        {/* Area / Trend Chart: By Day with Time Filter (Col 12) */}
         <div className="lg:col-span-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-500" />
               Biến động mật độ sâu hại theo thời gian (theo ngày)
             </h3>
+
+            {/* Time filter */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+              {[
+                { id: '7d', label: '7 ngày qua' },
+                { id: '30d', label: '30 ngày qua' },
+                { id: 'all', label: 'Tất cả' },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setTimeFilter(opt.id as any)}
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+                    timeFilter === opt.id
+                      ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="h-80 w-full">
@@ -297,9 +490,9 @@ export const StatsPage: React.FC = () => {
                 <YAxis tick={{ fontSize: 11, fill: '#888888' }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderRadius: '0.75rem',
-                    border: 'none',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#fff',
                     fontSize: '12px',
                   }}
@@ -323,7 +516,7 @@ export const StatsPage: React.FC = () => {
                       key={species}
                       type="monotone"
                       dataKey={species}
-                      name={species}
+                      name={getPestName(species)}
                       stroke={color}
                       strokeWidth={1.5}
                       fillOpacity={0.05}
@@ -339,3 +532,4 @@ export const StatsPage: React.FC = () => {
     </div>
   );
 };
+

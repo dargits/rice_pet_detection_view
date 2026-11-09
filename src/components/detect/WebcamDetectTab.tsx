@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { getWebSocketUrl } from '../../lib/api';
 import { drawDetections } from '../../lib/canvas';
 import { Detection } from '../../types';
 import { ClassBadge } from '../ui/Badge';
 import { SpeciesModal } from '../ui/SpeciesModal';
+import { evaluatePestRisk, findPestEntry } from '../../lib/pestTranslations';
 import {
   Camera,
   CameraOff,
@@ -17,6 +18,12 @@ import {
   AlertTriangle,
   Info,
   CheckCircle2,
+  Volume2,
+  VolumeX,
+  Download,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 
 interface DeviceItem {
@@ -39,9 +46,14 @@ export const WebcamDetectTab: React.FC = () => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [selectedPestForModal, setSelectedPestForModal] = useState<string | null>(null);
 
+  // VIP Features
+  const [isAudioAlertEnabled, setIsAudioAlertEnabled] = useState<boolean>(false);
+  const [lastAlertTime, setLastAlertTime] = useState<number>(0);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -51,6 +63,37 @@ export const WebcamDetectTab: React.FC = () => {
   const reconnectCountRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
   const fpsTimerRef = useRef<any>(null);
+
+  // Synthesize soft warning beep using Web Audio API
+  const playAlertSound = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+      osc.frequency.exponentialRampToValueAtTime(587.33, ctx.currentTime + 0.25); // D5 note
+
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch {
+      // Audio autoplay policy might restrict without user interaction
+    }
+  }, []);
 
   // Enumerate video devices
   useEffect(() => {
@@ -119,8 +162,28 @@ export const WebcamDetectTab: React.FC = () => {
   useEffect(() => {
     return () => {
       cleanupStreamAndSocket();
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
     };
   }, [cleanupStreamAndSocket]);
+
+  // Check audio alerts
+  const checkAudioAlert = useCallback((detections: Detection[]) => {
+    if (!isAudioAlertEnabled) return;
+    const now = Date.now();
+    if (now - lastAlertTime < 3500) return; // 3.5s cooldown
+
+    const hasDangerPest = detections.some((d) => {
+      const entry = findPestEntry(d.cls_id ?? d.cls);
+      return entry?.severity === 'critical' || entry?.severity === 'high';
+    });
+
+    if (hasDangerPest) {
+      setLastAlertTime(now);
+      playAlertSound();
+    }
+  }, [isAudioAlertEnabled, lastAlertTime, playAlertSound]);
 
   // Connect WebSocket
   const connectWebSocket = useCallback(() => {
@@ -166,6 +229,9 @@ export const WebcamDetectTab: React.FC = () => {
           });
           setCurrentCounts(counts);
 
+          // Trigger audio alert if dangerous pest detected
+          checkAudioAlert(detections);
+
           // Redraw canvas
           if (canvasRef.current && videoRef.current) {
             drawDetections({
@@ -204,7 +270,7 @@ export const WebcamDetectTab: React.FC = () => {
       setWsStatus('disconnected');
       setErrorText(`Không thể tạo kết nối WebSocket: ${err.message}`);
     }
-  }, [config, isStreaming, addToast]);
+  }, [config, isStreaming, addToast, checkAudioAlert, getPestName]);
 
   // Frame capture loop with BACKPRESSURE
   const captureAndSendLoop = useCallback(() => {
@@ -257,13 +323,14 @@ export const WebcamDetectTab: React.FC = () => {
               Math.floor(targetH * 0.6),
             ],
             cls: 'Rầy nâu',
-            cls_id: 0,
+            cls_id: 5,
             conf: 0.86,
           },
         ];
         setCurrentDetections(mockDets);
         setCurrentCounts({ 'Rầy nâu': 1 });
         setSessionSpecies((prev) => new Set([...prev, 'Rầy nâu']));
+        checkAudioAlert(mockDets);
 
         if (canvasRef.current && videoRef.current) {
           drawDetections({
@@ -298,7 +365,7 @@ export const WebcamDetectTab: React.FC = () => {
       'image/jpeg',
       0.7
     );
-  }, [config.mockMode]);
+  }, [config.mockMode, checkAudioAlert, getPestName]);
 
   // Start webcam
   const handleStartStream = async () => {
@@ -354,6 +421,45 @@ export const WebcamDetectTab: React.FC = () => {
     cleanupStreamAndSocket();
   };
 
+  // Instant Snapshot Capture
+  const handleCaptureSnapshot = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    const snapCanvas = document.createElement('canvas');
+    snapCanvas.width = video.videoWidth || canvas.width || 640;
+    snapCanvas.height = video.videoHeight || canvas.height || 480;
+
+    const ctx = snapCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw video frame
+    ctx.drawImage(video, 0, 0, snapCanvas.width, snapCanvas.height);
+    // Draw current canvas detections on top
+    ctx.drawImage(canvas, 0, 0, snapCanvas.width, snapCanvas.height);
+
+    // Branded watermark
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(10, snapCanvas.height - 35, 340, 25);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('YOLOv11 Lúa Việt • ' + new Date().toLocaleString('vi-VN'), 20, snapCanvas.height - 18);
+
+    const dataUrl = snapCanvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = `khao_sat_webcam_${Date.now()}.jpg`;
+    link.click();
+
+    addToast('success', 'Đã lưu ảnh chụp khảo sát', 'Khung hình kèm bounding box đã được lưu thành công.');
+  };
+
+  // Live Outbreak Risk
+  const liveRisk = useMemo(() => {
+    return evaluatePestRisk(currentCounts);
+  }, [currentCounts]);
+
   return (
     <div className="space-y-6">
       {/* Controls Bar */}
@@ -375,17 +481,47 @@ export const WebcamDetectTab: React.FC = () => {
           </select>
         </div>
 
-        {/* Telemetry metrics */}
-        <div className="flex items-center gap-3 sm:gap-4 text-xs font-mono">
+        {/* Telemetry metrics & Audio Alert toggle */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-mono">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
             <Gauge className="w-3.5 h-3.5 text-emerald-500" />
             <span>{fps} FPS</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <Activity className="w-3.5 h-3.5 text-blue-500" />
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-slate-700 dark:text-slate-300 ${
+              latencyMs < 60
+                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                : latencyMs < 150
+                ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-500/30 text-blue-700 dark:text-blue-300'
+                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-500/30 text-amber-700 dark:text-amber-300'
+            }`}
+            title="Độ trễ truyền nhận 2 chiều với Colab"
+          >
+            <Activity className="w-3.5 h-3.5" />
             <span>{latencyMs} ms</span>
           </div>
+
+          {/* Audio Alert switch */}
+          <button
+            onClick={() => {
+              const next = !isAudioAlertEnabled;
+              setIsAudioAlertEnabled(next);
+              if (next) {
+                playAlertSound();
+                addToast('info', 'Đã bật cảnh báo âm thanh', 'Hệ thống sẽ phát tiếng bip khi phát hiện sâu hại nguy hiểm.');
+              }
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-sans font-semibold transition-colors ${
+              isAudioAlertEnabled
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300'
+                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+            }`}
+            title="Bật/Tắt âm thanh cảnh báo khi phát hiện rầy nâu/sâu đục thân"
+          >
+            {isAudioAlertEnabled ? <Volume2 className="w-3.5 h-3.5 text-amber-500" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Âm báo</span>
+          </button>
 
           {/* WebSocket status pill */}
           <div
@@ -400,7 +536,7 @@ export const WebcamDetectTab: React.FC = () => {
             {wsStatus === 'connected' ? (
               <>
                 <Wifi className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="hidden sm:inline">WS Đã kết nối</span>
+                <span className="hidden sm:inline">WS Online</span>
               </>
             ) : wsStatus === 'connecting' ? (
               <>
@@ -410,14 +546,25 @@ export const WebcamDetectTab: React.FC = () => {
             ) : (
               <>
                 <WifiOff className="w-3.5 h-3.5 text-slate-400" />
-                <span className="hidden sm:inline">Chưa kết nối WS</span>
+                <span className="hidden sm:inline">Chưa kết nối</span>
               </>
             )}
           </div>
         </div>
 
         {/* Action Toggle */}
-        <div className="self-end sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          {isStreaming && (
+            <button
+              onClick={handleCaptureSnapshot}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold transition-all border border-slate-200 dark:border-slate-700"
+              title="Chụp lưu ảnh ngay thời điểm này"
+            >
+              <Download className="w-4 h-4 text-emerald-500" />
+              <span>Chụp ảnh</span>
+            </button>
+          )}
+
           {!isStreaming ? (
             <button
               onClick={handleStartStream}
@@ -503,6 +650,39 @@ export const WebcamDetectTab: React.FC = () => {
 
         {/* Real-time counters (Col 4) */}
         <div className="lg:col-span-4 space-y-4">
+          {/* Live Outbreak Risk Pill */}
+          {isStreaming && (
+            <div
+              className={`p-4 rounded-2xl border shadow-sm flex items-start gap-3 ${liveRisk.bg}`}
+            >
+              <div
+                className={`p-2 rounded-xl text-white shrink-0 ${
+                  liveRisk.level === 'critical'
+                    ? 'bg-rose-600'
+                    : liveRisk.level === 'warning'
+                    ? 'bg-amber-600'
+                    : liveRisk.level === 'low'
+                    ? 'bg-blue-600'
+                    : 'bg-emerald-600'
+                }`}
+              >
+                {liveRisk.level === 'critical' || liveRisk.level === 'warning' ? (
+                  <ShieldAlert className="w-4 h-4" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+              </div>
+              <div className="text-xs">
+                <span className="font-extrabold uppercase tracking-wider">
+                  Trực tiếp: {liveRisk.title}
+                </span>
+                <p className="mt-0.5 leading-relaxed font-medium opacity-90">
+                  {liveRisk.message}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Current Frame Breakdown */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -584,4 +764,5 @@ export const WebcamDetectTab: React.FC = () => {
     </div>
   );
 };
+
 

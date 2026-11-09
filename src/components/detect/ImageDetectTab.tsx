@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { predictImage } from '../../lib/api';
-import { drawDetections, exportAnnotatedImage } from '../../lib/canvas';
+import {
+  drawDetections,
+  exportAnnotatedImage,
+  exportExecutiveInspectionReport,
+  findDetectionAtPoint,
+} from '../../lib/canvas';
+import { evaluatePestRisk } from '../../lib/pestTranslations';
 import { Detection, PredictResponse } from '../../types';
 import { ClassBadge } from '../ui/Badge';
 import { SpeciesModal } from '../ui/SpeciesModal';
@@ -16,6 +22,19 @@ import {
   Loader2,
   Trash2,
   Info,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Eye,
+  EyeOff,
+  Filter,
+  FileCheck,
+  ShieldAlert,
+  Flame,
+  CheckCircle2,
+  Sliders,
+  ChevronRight,
+  SplitSquareVertical,
 } from 'lucide-react';
 
 interface ImageItem {
@@ -34,8 +53,19 @@ export const ImageDetectTab: React.FC = () => {
   const [isProcessingAll, setIsProcessingAll] = useState(false);
   const [selectedPestForModal, setSelectedPestForModal] = useState<string | null>(null);
 
+  // Canvas interactive settings
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [showLabels, setShowLabels] = useState<boolean>(true);
+  const [showConfidence, setShowConfidence] = useState<boolean>(true);
+  const [filterClass, setFilterClass] = useState<string>('all');
+  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [isComparingSplit, setIsComparingSplit] = useState<boolean>(false);
+  const [splitPosition, setSplitPosition] = useState<number>(50);
+
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // File input handler
   const handleFiles = (fileList: FileList | null) => {
@@ -61,6 +91,42 @@ export const ImageDetectTab: React.FC = () => {
     }
   };
 
+  // Demo sample loader
+  const loadDemoSample = async (sampleType: 'brown_hopper' | 'leaf_roller' | 'stem_borer') => {
+    const samples = {
+      brown_hopper: {
+        name: 'mau_ray_nau_mat_do_cao.jpg',
+        url: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=1200&q=80',
+      },
+      leaf_roller: {
+        name: 'mau_sau_cuon_la_dong_ruong.jpg',
+        url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=1200&q=80',
+      },
+      stem_borer: {
+        name: 'mau_sau_duc_than_hai_danh.jpg',
+        url: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+      },
+    };
+
+    const s = samples[sampleType];
+    try {
+      const res = await fetch(s.url);
+      const blob = await res.blob();
+      const file = new File([blob], s.name, { type: 'image/jpeg' });
+      const item: ImageItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        status: 'idle',
+      };
+      setImages((prev) => [...prev, item]);
+      setSelectedIndex(images.length);
+      addToast('info', 'Đã tải ảnh mẫu', `Đã thêm mẫu ${s.name} vào danh sách.`);
+    } catch {
+      addToast('error', 'Lỗi tải ảnh mẫu', 'Không thể kết nối tải ảnh mẫu.');
+    }
+  };
+
   // Drag and drop events
   const [isDragging, setIsDragging] = useState(false);
 
@@ -70,7 +136,7 @@ export const ImageDetectTab: React.FC = () => {
     handleFiles(e.dataTransfer.files);
   };
 
-  // Re-draw canvas overlay whenever selected image or its result changes
+  // Redraw canvas
   const redrawCanvas = useCallback(() => {
     const currentItem = images[selectedIndex];
     if (!currentItem || !imgRef.current || !canvasRef.current) return;
@@ -85,20 +151,74 @@ export const ImageDetectTab: React.FC = () => {
         detections: currentItem.result.detections,
         originalWidth: currentItem.result.width,
         originalHeight: currentItem.result.height,
+        showLabels,
+        showConfidence,
+        filterClass,
+        highlightIndex: highlightedIndex,
+        hoverIndex: hoveredIndex,
         getLabel: (d) => getPestName(d.cls_id ?? d.cls),
       });
     } else {
-      // Clear canvas if no detections
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  }, [images, selectedIndex, getPestName]);
+  }, [images, selectedIndex, showLabels, showConfidence, filterClass, highlightedIndex, hoveredIndex, getPestName]);
 
   useEffect(() => {
     redrawCanvas();
     window.addEventListener('resize', redrawCanvas);
     return () => window.removeEventListener('resize', redrawCanvas);
   }, [redrawCanvas]);
+
+  // Handle canvas click to select detection box
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const currentItem = images[selectedIndex];
+    if (!currentItem?.result?.detections || !canvasRef.current || !imgRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const hitIndex = findDetectionAtPoint(
+      x,
+      y,
+      currentItem.result.detections,
+      canvasRef.current.clientWidth,
+      canvasRef.current.clientHeight,
+      currentItem.result.width,
+      currentItem.result.height
+    );
+
+    if (hitIndex !== null) {
+      setHighlightedIndex(hitIndex);
+      const det = currentItem.result.detections[hitIndex];
+      setSelectedPestForModal(det.cls);
+    } else {
+      setHighlightedIndex(null);
+    }
+  };
+
+  // Handle mouse move on canvas to highlight box on hover
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const currentItem = images[selectedIndex];
+    if (!currentItem?.result?.detections || !canvasRef.current || !imgRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const hitIndex = findDetectionAtPoint(
+      x,
+      y,
+      currentItem.result.detections,
+      canvasRef.current.clientWidth,
+      canvasRef.current.clientHeight,
+      currentItem.result.width,
+      currentItem.result.height
+    );
+
+    setHoveredIndex(hitIndex);
+  };
 
   // Clean up object URLs on unmount
   useEffect(() => {
@@ -144,7 +264,8 @@ export const ImageDetectTab: React.FC = () => {
     addToast('success', 'Hoàn tất phân tích', `Đã nhận diện thành công ${successCount} ảnh.`);
   };
 
-  const handleDownloadResult = async () => {
+  // Download Standard Annotated Image
+  const handleDownloadStandard = async () => {
     const currentItem = images[selectedIndex];
     if (!currentItem || !imgRef.current || !currentItem.result) return;
 
@@ -158,8 +279,33 @@ export const ImageDetectTab: React.FC = () => {
       link.href = dataUrl;
       link.download = `rice_pest_${currentItem.file.name.replace(/\.[^/.]+$/, '')}_annotated.jpg`;
       link.click();
+      addToast('success', 'Đã tải ảnh thành công', 'Ảnh đã vẽ bounding box đã lưu về máy.');
     } catch {
       addToast('error', 'Lỗi tải ảnh', 'Không thể tạo file ảnh kết quả từ canvas.');
+    }
+  };
+
+  // Download VIP Executive Report
+  const handleDownloadExecutiveReport = async () => {
+    const currentItem = images[selectedIndex];
+    if (!currentItem || !imgRef.current || !currentItem.result) return;
+
+    try {
+      const dataUrl = await exportExecutiveInspectionReport(
+        imgRef.current,
+        currentItem.result.detections,
+        currentItem.file.name,
+        currentItem.result.ms,
+        config.defaultConf,
+        (d) => getPestName(d.cls_id ?? d.cls)
+      );
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `rice_pest_executive_report_${currentItem.file.name.replace(/\.[^/.]+$/, '')}.jpg`;
+      link.click();
+      addToast('success', 'Đã xuất phiếu giám định VIP', 'Báo cáo giám định chuyên sâu đã được tải xuống.');
+    } catch {
+      addToast('error', 'Lỗi xuất báo cáo', 'Không thể tạo phiếu giám định.');
     }
   };
 
@@ -173,46 +319,78 @@ export const ImageDetectTab: React.FC = () => {
   };
 
   const currentItem = images[selectedIndex];
+  const risk = currentItem?.result?.counts ? evaluatePestRisk(currentItem.result.counts) : null;
+
+  // Distinct species in current item for filter dropdown
+  const detectedSpeciesList = currentItem?.result?.counts ? Object.keys(currentItem.result.counts) : [];
 
   return (
     <div className="space-y-6">
-      {/* Upload Zone */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
-          isDragging
-            ? 'border-emerald-500 bg-emerald-500/10'
-            : 'border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-        }`}
-        onClick={() => {
-          document.getElementById('image-file-input')?.click();
-        }}
-      >
-        <input
-          id="image-file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
-            <UploadCloud className="w-6 h-6" />
+      {/* Upload Zone & Quick Samples */}
+      <div className="space-y-3">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
+            isDragging
+              ? 'border-emerald-500 bg-emerald-500/10 scale-[1.005]'
+              : 'border-slate-300 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-sm backdrop-blur-sm'
+          }`}
+          onClick={() => {
+            document.getElementById('image-file-input')?.click();
+          }}
+        >
+          <input
+            id="image-file-input"
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25">
+              <UploadCloud className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-slate-800 dark:text-slate-100">
+                Kéo thả hoặc nhấp để chọn ảnh mẫu lúa cần chẩn đoán
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Hỗ trợ độ phân giải cao (JPG, PNG, WEBP). Mô hình YOLOv11 tối ưu nhận diện chính xác kể cả các cá thể sâu non li ti.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Kéo thả hoặc nhấp để chọn ảnh mẫu lúa bị hại
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Hỗ trợ JPG, PNG, WEBP. Cho phép tải lên nhiều ảnh cùng lúc để xử lý tuần tự.
-            </p>
-          </div>
+        </div>
+
+        {/* Quick Demo Samples Bar */}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span className="font-semibold flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            Thử nhanh với mẫu ruộng thực địa:
+          </span>
+          <button
+            onClick={() => loadDemoSample('brown_hopper')}
+            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+          >
+            🌾 Mẫu Rầy nâu
+          </button>
+          <button
+            onClick={() => loadDemoSample('leaf_roller')}
+            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+          >
+            🍃 Mẫu Sâu cuốn lá
+          </button>
+          <button
+            onClick={() => loadDemoSample('stem_borer')}
+            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+          >
+            🌾 Mẫu Sâu đục thân
+          </button>
         </div>
       </div>
 
@@ -220,15 +398,18 @@ export const ImageDetectTab: React.FC = () => {
       {images.length > 0 && (
         <div className="space-y-6">
           {/* Thumbnails strip & Batch Action */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
               {images.map((item, idx) => (
                 <div
                   key={item.id}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer shrink-0 transition-transform ${
+                  onClick={() => {
+                    setSelectedIndex(idx);
+                    setHighlightedIndex(null);
+                  }}
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 cursor-pointer shrink-0 transition-all ${
                     idx === selectedIndex
-                      ? 'border-emerald-500 scale-105 shadow-md'
+                      ? 'border-emerald-500 scale-105 shadow-md shadow-emerald-500/20'
                       : 'border-transparent opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -239,7 +420,7 @@ export const ImageDetectTab: React.FC = () => {
                   />
                   {item.status === 'processing' && (
                     <div className="absolute inset-0 bg-slate-950/60 flex items-center justify-center">
-                      <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
                     </div>
                   )}
                   {item.status === 'done' && (
@@ -268,17 +449,17 @@ export const ImageDetectTab: React.FC = () => {
               <button
                 onClick={handleProcessAll}
                 disabled={isProcessingAll}
-                className="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 rounded-xl shadow-md shadow-emerald-600/20 transition-all inline-flex items-center gap-2"
+                className="px-5 py-2.5 text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 disabled:opacity-50 rounded-xl shadow-md shadow-emerald-600/20 transition-all inline-flex items-center gap-2"
               >
                 {isProcessingAll ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Đang xử lý ({selectedIndex + 1}/{images.length})...</span>
+                    <span>Đang chẩn đoán ({selectedIndex + 1}/{images.length})...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Nhận diện {images.length > 1 ? `tất cả (${images.length})` : 'ảnh'}</span>
+                    <span>Nhận diện {images.length > 1 ? `tất cả (${images.length} ảnh)` : 'ngay'}</span>
                   </>
                 )}
               </button>
@@ -287,54 +468,232 @@ export const ImageDetectTab: React.FC = () => {
 
           {/* Viewer & Results Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Visual Canvas Display (Col 8) */}
-            <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm overflow-hidden flex flex-col items-center justify-center">
-              <div className="relative max-w-full inline-block rounded-xl overflow-hidden shadow-inner bg-slate-950">
-                <img
-                  ref={imgRef}
-                  src={currentItem.previewUrl}
-                  alt={currentItem.file.name}
-                  onLoad={redrawCanvas}
-                  className="max-h-[560px] w-auto object-contain block mx-auto"
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                />
+            {/* Visual Canvas Display & Interactive Toolbar (Col 8) */}
+            <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm overflow-hidden flex flex-col space-y-3">
+              {/* Interactive Toolbar on Canvas */}
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1 text-xs">
+                {/* Zoom & View Controls */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                  <button
+                    onClick={() => setZoomLevel((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                    title="Thu nhỏ"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-1.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <button
+                    onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                    title="Phóng to"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setZoomLevel(1)}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors ml-1"
+                    title="Đặt lại kích thước chuẩn"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Display Toggles */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={() => setShowLabels(!showLabels)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
+                      showLabels
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {showLabels ? <Eye className="w-3 h-3 text-emerald-500" /> : <EyeOff className="w-3 h-3 text-slate-400" />}
+                    <span>Nhãn tên</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowConfidence(!showConfidence)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
+                      showConfidence
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <span>% Conf</span>
+                  </button>
+
+                  {/* Filter by Species */}
+                  {detectedSpeciesList.length > 1 && (
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                      <Filter className="w-3 h-3 text-slate-400" />
+                      <select
+                        value={filterClass}
+                        onChange={(e) => setFilterClass(e.target.value)}
+                        className="bg-transparent text-[11px] font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                      >
+                        <option value="all">Tất cả loài ({detectedSpeciesList.length})</option>
+                        {detectedSpeciesList.map((cls) => (
+                          <option key={cls} value={cls}>
+                            Chỉ hiện: {getPestName(cls)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Compare split toggle */}
+                  {currentItem.result && (
+                    <button
+                      onClick={() => setIsComparingSplit(!isComparingSplit)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
+                        isComparingSplit
+                          ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                      }`}
+                      title="So sánh ảnh gốc và kết quả AI"
+                    >
+                      <SplitSquareVertical className="w-3 h-3" />
+                      <span>So sánh</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
+              {/* Main Image Viewport with Pan/Zoom & Split Slider */}
+              <div
+                ref={containerRef}
+                className="relative w-full max-h-[600px] overflow-auto rounded-2xl bg-slate-950 flex items-center justify-center border border-slate-900 shadow-inner select-none"
+              >
+                <div
+                  className="relative inline-block transition-transform duration-100 origin-center"
+                  style={{ transform: `scale(${zoomLevel})` }}
+                >
+                  <img
+                    ref={imgRef}
+                    src={currentItem.previewUrl}
+                    alt={currentItem.file.name}
+                    onLoad={redrawCanvas}
+                    className="max-h-[560px] w-auto object-contain block mx-auto"
+                  />
+
+                  {/* Overlay Canvas */}
+                  <canvas
+                    ref={canvasRef}
+                    onClick={handleCanvasClick}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    className={`absolute inset-0 w-full h-full cursor-crosshair ${isComparingSplit ? 'pointer-events-none' : ''}`}
+                    style={
+                      isComparingSplit
+                        ? { clipPath: `polygon(${splitPosition}% 0, 100% 0, 100% 100%, ${splitPosition}% 100%)` }
+                        : {}
+                    }
+                  />
+
+                  {/* Split slider bar */}
+                  {isComparingSplit && (
+                    <div
+                      className="absolute top-0 bottom-0 w-1 bg-white shadow-lg pointer-events-none"
+                      style={{ left: `${splitPosition}%` }}
+                    >
+                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-white text-slate-800 flex items-center justify-center shadow-md text-[10px] font-bold">
+                        ↔
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Split Position Slider */}
+              {isComparingSplit && (
+                <div className="flex items-center gap-3 px-2 text-xs">
+                  <span className="text-slate-400 text-[11px] shrink-0">Ảnh gốc</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={splitPosition}
+                    onChange={(e) => setSplitPosition(Number(e.target.value))}
+                    className="w-full accent-blue-600"
+                  />
+                  <span className="text-emerald-500 font-semibold text-[11px] shrink-0">AI Bounding Box</span>
+                </div>
+              )}
+
               {/* Status footer on image */}
-              <div className="w-full flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-3 px-2 border-t border-slate-100 dark:border-slate-800 mt-3">
-                <span className="truncate max-w-[200px] sm:max-w-xs font-mono">
-                  {currentItem.file.name}
-                </span>
-                {currentItem.result && (
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="flex items-center gap-1 font-mono">
-                      <Clock className="w-3.5 h-3.5 text-emerald-500" />
+              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 px-1 border-t border-slate-100 dark:border-slate-800 gap-2">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="font-mono truncate max-w-[220px]">
+                    {currentItem.file.name}
+                  </span>
+                  {currentItem.result && (
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      <Clock className="w-3 h-3" />
                       {currentItem.result.ms} ms
                     </span>
+                  )}
+                </div>
+
+                {currentItem.result && (
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={handleDownloadResult}
-                      className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                      onClick={handleDownloadStandard}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] transition-colors"
+                      title="Tải ảnh đã vẽ box"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Tải ảnh đã vẽ box
+                      Tải ảnh Bounding Box
+                    </button>
+                    <button
+                      onClick={handleDownloadExecutiveReport}
+                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm shadow-emerald-600/20 transition-all"
+                      title="Xuất phiếu giám định dịch hại nông nghiệp VIP"
+                    >
+                      <FileCheck className="w-3.5 h-3.5" />
+                      Xuất Báo cáo Giám sát VIP
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Results Sidebar (Col 4) */}
+            {/* Results & Agro-Intelligence Sidebar (Col 4) */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+              {/* Outbreak Risk Evaluation Card */}
+              {risk && (
+                <div className={`p-4 rounded-3xl border shadow-sm space-y-2 transition-all ${risk.bg}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      {risk.level === 'critical' ? (
+                        <Flame className="w-5 h-5 text-rose-500 animate-bounce" />
+                      ) : risk.level === 'warning' ? (
+                        <ShieldAlert className="w-5 h-5 text-amber-500" />
+                      ) : (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      )}
+                      <span>{risk.title}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed opacity-95">
+                    {risk.message}
+                  </p>
+                  <div className="pt-2 border-t border-current/15 text-[11px] leading-relaxed">
+                    <strong>Khuyến cáo IPM:</strong> {risk.recommendedAction}
+                  </div>
+                </div>
+              )}
+
+              {/* Main Analysis Results Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                    Kết quả nhận diện
+                    Chi tiết nhận diện
                   </h3>
                   {currentItem.result && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       {currentItem.result.detections.length} đối tượng
                     </span>
                   )}
@@ -343,12 +702,12 @@ export const ImageDetectTab: React.FC = () => {
                 {currentItem.status === 'idle' && (
                   <div className="py-8 text-center text-slate-500 dark:text-slate-400 space-y-2">
                     <ImageIcon className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
-                    <p className="text-xs">Chưa phân tích ảnh này.</p>
+                    <p className="text-xs">Chưa phân tích mẫu ảnh này.</p>
                     <button
                       onClick={handleProcessAll}
-                      className="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm"
+                      className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm"
                     >
-                      Bấm để nhận diện ngay
+                      Bấm để chẩn đoán ngay
                     </button>
                   </div>
                 )}
@@ -356,12 +715,12 @@ export const ImageDetectTab: React.FC = () => {
                 {currentItem.status === 'processing' && (
                   <div className="py-10 text-center text-slate-500 space-y-2">
                     <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto" />
-                    <p className="text-xs font-medium">YOLOv11 đang phân tích mẫu ảnh...</p>
+                    <p className="text-xs font-medium">YOLOv11 đang quét các tổn thương trên lá...</p>
                   </div>
                 )}
 
                 {currentItem.status === 'error' && (
-                  <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300 text-xs space-y-1">
+                  <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300 text-xs space-y-1">
                     <p className="font-semibold flex items-center gap-1.5">
                       <AlertCircle className="w-4 h-4" />
                       Không thể nhận diện
@@ -372,15 +731,14 @@ export const ImageDetectTab: React.FC = () => {
 
                 {currentItem.status === 'done' && currentItem.result && (
                   <div className="space-y-4">
-                    {/* Check if no pests detected */}
                     {currentItem.result.detections.length === 0 ? (
-                      <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-800/30 text-center space-y-2">
+                      <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/30 text-center space-y-2">
                         <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
                         <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                          Không phát hiện côn trùng gây hại
+                          Lá lúa khỏe mạnh
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">
-                          Mẫu lá hoặc dảnh lúa hiện tại không ghi nhận loài sâu hại nào với ngưỡng tin cậy{' '}
+                          Không ghi nhận cá thể sâu bệnh nào ở ngưỡng tin cậy{' '}
                           <strong>{config.defaultConf}</strong>.
                         </p>
                       </div>
@@ -406,29 +764,43 @@ export const ImageDetectTab: React.FC = () => {
                             })}
                           </div>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 italic flex items-center gap-1">
-                            <Info className="w-3 h-3 shrink-0" />
-                            Nhấp vào tên loài để xem hướng dẫn phòng trừ IPM.
+                            <Info className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                            Bấm vào từng nhãn hoặc nhấp trực tiếp vào con sâu trên ảnh để xem phòng trừ.
                           </p>
                         </div>
 
-                        {/* Detailed Detections List */}
+                        {/* Interactive Detections List */}
                         <div className="space-y-1.5">
                           <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                            Chi tiết từng đối tượng:
+                            Danh sách đối tượng phát hiện:
                           </p>
-                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 text-xs">
                             {currentItem.result.detections.map((det, idx) => (
                               <div
                                 key={idx}
-                                onClick={() => setSelectedPestForModal(det.cls)}
-                                className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 cursor-pointer transition-colors"
+                                onMouseEnter={() => setHoveredIndex(idx)}
+                                onMouseLeave={() => setHoveredIndex(null)}
+                                onClick={() => {
+                                  setHighlightedIndex(idx);
+                                  setSelectedPestForModal(det.cls);
+                                }}
+                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                  highlightedIndex === idx || hoveredIndex === idx
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm scale-[1.01]'
+                                    : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200/60 dark:border-slate-700/60'
+                                }`}
                               >
-                                <span className="font-medium text-slate-800 dark:text-slate-200">
-                                  #{idx + 1} {getPestName(det.cls_id ?? det.cls)}
-                                </span>
-                                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  {(det.conf * 100).toFixed(1)}%
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                    #{idx + 1} {getPestName(det.cls_id ?? det.cls)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    {(det.conf * 100).toFixed(1)}%
+                                  </span>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -451,4 +823,3 @@ export const ImageDetectTab: React.FC = () => {
     </div>
   );
 };
-

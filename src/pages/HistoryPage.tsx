@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useConfig } from '../context/ConfigContext';
 import { fetchHistory, fetchHistoryItem, deleteHistoryItem, downloadExportCsv, buildMediaUrl } from '../lib/api';
@@ -6,6 +6,7 @@ import { HistoryItem, Detection } from '../types';
 import { SourceBadge, ClassBadge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { SpeciesModal } from '../components/ui/SpeciesModal';
+import { evaluatePestRisk } from '../lib/pestTranslations';
 import {
   History,
   FileSpreadsheet,
@@ -16,6 +17,12 @@ import {
   ChevronRight,
   Loader2,
   FileQuestion,
+  Search,
+  Copy,
+  Check,
+  Download,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
@@ -26,6 +33,8 @@ export const HistoryPage: React.FC = () => {
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'image' | 'video' | 'stream'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [page, setPage] = useState<number>(0);
   const pageSize = 20;
 
@@ -89,6 +98,14 @@ export const HistoryPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
+  const handleCopyId = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    addToast('info', 'Đã sao chép ID', id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const handleDelete = async () => {
     if (!deleteTargetId) return;
     setIsDeleting(true);
@@ -119,7 +136,30 @@ export const HistoryPage: React.FC = () => {
     }
   };
 
+  // Client-side quick filter on current loaded page
+  const filteredItems = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return items;
+
+    return items.filter((item) => {
+      const filenameMatch = item.filename?.toLowerCase().includes(q);
+      const idMatch = item.id.toLowerCase().includes(q);
+      const pestMatch = item.counts
+        ? Object.keys(item.counts).some(
+            (k) => k.toLowerCase().includes(q) || getPestName(k).toLowerCase().includes(q)
+          )
+        : false;
+      return filenameMatch || idMatch || pestMatch;
+    });
+  }, [items, searchQuery, getPestName]);
+
   const totalPages = Math.ceil(total / pageSize);
+
+  // Risk assessment for the currently selected item
+  const selectedItemRisk = useMemo(() => {
+    if (!selectedItem?.counts) return null;
+    return evaluatePestRisk(selectedItem.counts);
+  }, [selectedItem]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -161,32 +201,47 @@ export const HistoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700/60 max-w-fit">
-        {(['all', 'image', 'video', 'stream'] as const).map((filter) => {
-          const labels = {
-            all: 'Tất cả nguồn',
-            image: 'Hình ảnh',
-            video: 'Video',
-            stream: 'Webcam',
-          };
-          return (
-            <button
-              key={filter}
-              onClick={() => {
-                setSourceFilter(filter);
-                setPage(0);
-              }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                sourceFilter === filter
-                  ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              {labels[filter]}
-            </button>
-          );
-        })}
+      {/* Filter Tabs & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Source tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700/60 max-w-fit">
+          {(['all', 'image', 'video', 'stream'] as const).map((filter) => {
+            const labels = {
+              all: 'Tất cả nguồn',
+              image: 'Hình ảnh',
+              video: 'Video',
+              stream: 'Webcam',
+            };
+            return (
+              <button
+                key={filter}
+                onClick={() => {
+                  setSourceFilter(filter);
+                  setPage(0);
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  sourceFilter === filter
+                    ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                {labels[filter]}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Search */}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Lọc theo tên file, loài..."
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
       </div>
 
       {/* Main Table */}
@@ -227,18 +282,18 @@ export const HistoryPage: React.FC = () => {
                     </td>
                   </tr>
                 ))
-              ) : items.length === 0 ? (
+              ) : filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     <FileQuestion className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700 mb-2" />
-                    <p className="text-sm font-semibold">Chưa có bản ghi lịch sử nào</p>
+                    <p className="text-sm font-semibold">Chưa có bản ghi lịch sử nào phù hợp</p>
                     <p className="text-xs mt-1">
                       Hãy thực hiện nhận diện ảnh, video hoặc mở camera để lưu kết quả.
                     </p>
                   </td>
                 </tr>
               ) : (
-                items.map((item) => (
+                filteredItems.map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
@@ -347,9 +402,40 @@ export const HistoryPage: React.FC = () => {
       >
         {selectedItem && (
           <div className="space-y-6">
+            {/* Risk Assessment Banner if counts exist */}
+            {selectedItemRisk && (
+              <div
+                className={`p-3.5 rounded-xl border flex items-start gap-3 ${selectedItemRisk.bg}`}
+              >
+                <div
+                  className={`p-1.5 rounded-lg text-white shrink-0 ${
+                    selectedItemRisk.level === 'critical'
+                      ? 'bg-rose-600'
+                      : selectedItemRisk.level === 'warning'
+                      ? 'bg-amber-600'
+                      : selectedItemRisk.level === 'low'
+                      ? 'bg-blue-600'
+                      : 'bg-emerald-600'
+                  }`}
+                >
+                  {selectedItemRisk.level === 'critical' || selectedItemRisk.level === 'warning' ? (
+                    <ShieldAlert className="w-4 h-4" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="text-xs">
+                  <span className="font-bold uppercase tracking-wider">
+                    {selectedItemRisk.title}
+                  </span>
+                  <p className="mt-0.5 opacity-90">{selectedItemRisk.message}</p>
+                </div>
+              </div>
+            )}
+
             {/* Annotated Image if present */}
             {selectedItem.has_image && (
-              <div className="rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200 dark:border-slate-800">
+              <div className="relative rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200 dark:border-slate-800">
                 <img
                   src={buildMediaUrl(`/history/${selectedItem.id}/image`, config)}
                   alt="Ảnh đã vẽ bounding box"
@@ -377,14 +463,16 @@ export const HistoryPage: React.FC = () => {
                 </p>
               </div>
 
-              {selectedItem.meta?.duration !== undefined && (
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-                  <p className="text-slate-400">Thời lượng video</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5 font-mono">
-                    {String(selectedItem.meta.duration)} giây
-                  </p>
-                </div>
-              )}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                <p className="text-slate-400">Mã bản ghi</p>
+                <button
+                  onClick={() => handleCopyId(selectedItem.id)}
+                  className="font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1 hover:underline truncate"
+                >
+                  <span className="truncate">{selectedItem.id}</span>
+                  {copiedId === selectedItem.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
 
               {selectedItem.meta?.device !== undefined && (
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
@@ -485,3 +573,4 @@ export const HistoryPage: React.FC = () => {
     </div>
   );
 };
+
