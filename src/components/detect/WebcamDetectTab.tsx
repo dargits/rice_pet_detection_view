@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Sliders,
 } from 'lucide-react';
 
 interface DeviceItem {
@@ -32,7 +33,7 @@ interface DeviceItem {
 }
 
 export const WebcamDetectTab: React.FC = () => {
-  const { config, addToast, getPestName } = useConfig();
+  const { config, updateConfig, addToast, getPestName } = useConfig();
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [devices, setDevices] = useState<DeviceItem[]>([]);
@@ -218,7 +219,10 @@ export const WebcamDetectTab: React.FC = () => {
 
         try {
           const data = JSON.parse(event.data);
-          const detections: Detection[] = data.detections || [];
+          const rawDetections: Detection[] = data.detections || [];
+          const detections: Detection[] = rawDetections.filter(
+            (d: Detection) => d.conf >= config.defaultConf
+          );
           setCurrentDetections(detections);
 
           // Update current counts
@@ -232,7 +236,7 @@ export const WebcamDetectTab: React.FC = () => {
           // Trigger audio alert if dangerous pest detected
           checkAudioAlert(detections);
 
-          // Redraw canvas
+          // Redraw canvas with minConfidence
           if (canvasRef.current && videoRef.current) {
             drawDetections({
               canvas: canvasRef.current,
@@ -240,6 +244,7 @@ export const WebcamDetectTab: React.FC = () => {
               detections,
               originalWidth: data.width,
               originalHeight: data.height,
+              minConfidence: config.defaultConf,
               getLabel: (d) => getPestName(d.cls_id ?? d.cls),
             });
           }
@@ -314,23 +319,27 @@ export const WebcamDetectTab: React.FC = () => {
         setLatencyMs(Math.floor(25 + Math.random() * 20));
 
         // Generate 1-2 random detections
-        const mockDets: Detection[] = [
+        const sampleBox: [number, number, number, number] = [
+          Math.floor(targetW * 0.3),
+          Math.floor(targetH * 0.3),
+          Math.floor(targetW * 0.55),
+          Math.floor(targetH * 0.6),
+        ];
+        const baseMock: Detection[] = [
           {
-            box: [
-              Math.floor(targetW * 0.3),
-              Math.floor(targetH * 0.3),
-              Math.floor(targetW * 0.55),
-              Math.floor(targetH * 0.6),
-            ],
+            box: sampleBox,
             cls: 'Rầy nâu',
             cls_id: 5,
             conf: 0.86,
           },
         ];
+        const mockDets: Detection[] = baseMock.filter((d) => d.conf >= config.defaultConf);
         setCurrentDetections(mockDets);
-        setCurrentCounts({ 'Rầy nâu': 1 });
-        setSessionSpecies((prev) => new Set([...prev, 'Rầy nâu']));
-        checkAudioAlert(mockDets);
+        setCurrentCounts(mockDets.length > 0 ? { 'Rầy nâu': 1 } : {});
+        if (mockDets.length > 0) {
+          setSessionSpecies((prev) => new Set([...prev, 'Rầy nâu']));
+          checkAudioAlert(mockDets);
+        }
 
         if (canvasRef.current && videoRef.current) {
           drawDetections({
@@ -339,6 +348,7 @@ export const WebcamDetectTab: React.FC = () => {
             detections: mockDets,
             originalWidth: targetW,
             originalHeight: targetH,
+            minConfidence: config.defaultConf,
             getLabel: (d) => getPestName(d.cls_id ?? d.cls),
           });
         }
@@ -483,6 +493,24 @@ export const WebcamDetectTab: React.FC = () => {
 
         {/* Telemetry metrics & Audio Alert toggle */}
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-mono">
+          {/* Global confidence slider control */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-sans"
+            title="Ngưỡng tin cậy áp dụng toàn web"
+          >
+            <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span className="text-xs">Conf: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{config.defaultConf.toFixed(2)}</span></span>
+            <input
+              type="range"
+              min="0.1"
+              max="0.9"
+              step="0.05"
+              value={config.defaultConf}
+              onChange={(e) => updateConfig({ defaultConf: parseFloat(e.target.value) })}
+              className="w-16 accent-emerald-600 cursor-pointer h-1.5"
+            />
+          </div>
+
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
             <Gauge className="w-3.5 h-3.5 text-emerald-500" />
             <span>{fps} FPS</span>

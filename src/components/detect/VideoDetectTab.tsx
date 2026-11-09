@@ -26,10 +26,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Sliders,
 } from 'lucide-react';
 
 export const VideoDetectTab: React.FC = () => {
-  const { config, addToast, getPestName } = useConfig();
+  const { config, updateConfig, addToast, getPestName } = useConfig();
   const navigate = useNavigate();
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -195,36 +196,62 @@ export const VideoDetectTab: React.FC = () => {
     addToast('success', 'Đã tải mẫu video khảo sát', 'Dữ liệu phát hiện côn trùng và timeline đã sẵn sàng kiểm tra.');
   };
 
-  // Filtered timeline frames
+  // Filtered timeline frames (filtered by global confidence threshold & species filter)
   const filteredFrames = useMemo(() => {
     if (!jobData?.frames) return [];
-    if (selectedSpeciesFilter === 'all') return jobData.frames;
-    return jobData.frames.filter((f) =>
-      f.detections.some((d) => (d.cls === selectedSpeciesFilter || d.cls_id?.toString() === selectedSpeciesFilter))
-    );
-  }, [jobData?.frames, selectedSpeciesFilter]);
+    return jobData.frames
+      .map((f) => ({
+        ...f,
+        detections: f.detections.filter((d) => d.conf >= config.defaultConf),
+      }))
+      .filter((f) => {
+        if (f.detections.length === 0) return false;
+        if (selectedSpeciesFilter === 'all') return true;
+        return f.detections.some(
+          (d) => d.cls === selectedSpeciesFilter || d.cls_id?.toString() === selectedSpeciesFilter
+        );
+      });
+  }, [jobData?.frames, selectedSpeciesFilter, config.defaultConf]);
 
   // Unique species in frames
   const availableSpeciesInFrames = useMemo(() => {
     if (!jobData?.frames) return [];
     const set = new Set<string>();
     jobData.frames.forEach((f) => {
-      f.detections.forEach((d) => set.add(d.cls));
+      f.detections.forEach((d) => {
+        if (d.conf >= config.defaultConf) {
+          set.add(d.cls);
+        }
+      });
     });
     return Array.from(set);
-  }, [jobData?.frames]);
+  }, [jobData?.frames, config.defaultConf]);
 
-  // Risk assessment calculation
+  // Aggregate counts filtered by global defaultConf
+  const effectiveVideoCounts = useMemo(() => {
+    if (!jobData?.frames || jobData.frames.length === 0) return jobData?.counts || {};
+    const counts: Record<string, number> = {};
+    jobData.frames.forEach((f) => {
+      f.detections.forEach((d) => {
+        if (d.conf >= config.defaultConf) {
+          counts[d.cls] = (counts[d.cls] || 0) + 1;
+        }
+      });
+    });
+    return Object.keys(counts).length > 0 ? counts : (jobData.counts || {});
+  }, [jobData?.frames, jobData?.counts, config.defaultConf]);
+
+  // Risk assessment calculation based on effective counts
   const riskAssessment = useMemo(() => {
-    return evaluatePestRisk(jobData?.counts || {});
-  }, [jobData?.counts]);
+    return evaluatePestRisk(effectiveVideoCounts);
+  }, [effectiveVideoCounts]);
 
   // Export timeline CSV
   const handleExportTimelineCsv = () => {
-    if (!jobData?.frames || jobData.frames.length === 0) return;
+    if (filteredFrames.length === 0) return;
 
     const headers = ['Frame', 'Thời gian (giây)', 'Loài côn trùng', 'Tên tiếng Việt', 'Độ tin cậy (%)'];
-    const rows = jobData.frames.flatMap((f) =>
+    const rows = filteredFrames.flatMap((f) =>
       f.detections.map((d) => [
         f.frame,
         f.time.toFixed(2),
@@ -261,22 +288,42 @@ export const VideoDetectTab: React.FC = () => {
                 Nhận diện video khảo sát đồng ruộng
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Mô hình YOLOv11 sẽ phân tích từng khung hình (skip: {config.videoSkip}) và ghép video kết quả.
+                Mô hình YOLOv11 phân tích từng khung hình (skip: {config.videoSkip}, conf: {config.defaultConf}).
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Global confidence slider control */}
+            <div
+              className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60"
+              title="Ngưỡng tin cậy áp dụng toàn web"
+            >
+              <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                Ngưỡng: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{config.defaultConf.toFixed(2)}</span>
+              </span>
+              <input
+                type="range"
+                min="0.1"
+                max="0.9"
+                step="0.05"
+                value={config.defaultConf}
+                onChange={(e) => updateConfig({ defaultConf: parseFloat(e.target.value) })}
+                className="w-16 sm:w-20 accent-emerald-600 cursor-pointer h-1.5"
+              />
+            </div>
+
             <button
               onClick={handleLoadSampleVideoAnalysis}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors shrink-0"
               title="Tải mẫu phân tích có sẵn để trải nghiệm giao diện"
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>Thử video mẫu</span>
             </button>
 
-            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors shrink-0 shadow-md shadow-emerald-600/20">
+            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors shrink-0 shadow-md shadow-emerald-600/20">
               <UploadCloud className="w-4 h-4" />
               <span>Chọn file video</span>
               <input
@@ -403,6 +450,9 @@ export const VideoDetectTab: React.FC = () => {
                   <span className="font-extrabold text-xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/60 dark:bg-black/30">
                     Cảnh báo: {riskAssessment.title}
                   </span>
+                  <span className="text-[11px] font-mono opacity-80">
+                    (Ngưỡng lọc Conf: {config.defaultConf})
+                  </span>
                 </div>
                 <p className="text-xs font-medium mt-1 leading-relaxed opacity-95">
                   {riskAssessment.message}
@@ -512,13 +562,13 @@ export const VideoDetectTab: React.FC = () => {
                 <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
                   <span>Tổng hợp loài phát hiện</span>
                   <span className="text-[11px] font-mono text-slate-400">
-                    {Object.values(jobData.counts || {}).reduce((a, b) => a + b, 0)} cá thể
+                    {Object.values(effectiveVideoCounts).reduce((a, b) => a + b, 0)} cá thể
                   </span>
                 </h4>
 
-                {jobData.counts && Object.keys(jobData.counts).length > 0 ? (
+                {Object.keys(effectiveVideoCounts).length > 0 ? (
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {Object.entries(jobData.counts).map(([name, count]) => (
+                    {Object.entries(effectiveVideoCounts).map(([name, count]) => (
                       <ClassBadge
                         key={name}
                         clsId={name}
@@ -529,7 +579,7 @@ export const VideoDetectTab: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">Không ghi nhận sâu bệnh trên video này.</p>
+                  <p className="text-xs text-slate-500">Không ghi nhận sâu bệnh vượt ngưỡng trên video này.</p>
                 )}
               </div>
 
@@ -541,7 +591,7 @@ export const VideoDetectTab: React.FC = () => {
                     Timeline khung hình
                   </h4>
                   <span className="text-[10px] text-slate-400 font-mono">
-                    {filteredFrames.length} / {jobData.frames?.length || 0} mốc
+                    {filteredFrames.length} mốc (conf ≥ {config.defaultConf})
                   </span>
                 </div>
 
@@ -618,7 +668,7 @@ export const VideoDetectTab: React.FC = () => {
                     ))
                   ) : (
                     <p className="text-xs text-slate-400 text-center py-4">
-                      Không có khung hình nào phù hợp bộ lọc.
+                      Không có khung hình nào vượt ngưỡng tin cậy {config.defaultConf}.
                     </p>
                   )}
                 </div>
@@ -636,5 +686,6 @@ export const VideoDetectTab: React.FC = () => {
     </div>
   );
 };
+
 
 

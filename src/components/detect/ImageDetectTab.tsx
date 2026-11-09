@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { predictImage } from '../../lib/api';
 import {
@@ -35,6 +35,9 @@ import {
   Sliders,
   ChevronRight,
   SplitSquareVertical,
+  Maximize2,
+  Minimize2,
+  Scan,
 } from 'lucide-react';
 
 interface ImageItem {
@@ -44,10 +47,12 @@ interface ImageItem {
   status: 'idle' | 'processing' | 'done' | 'error';
   result?: PredictResponse;
   error?: string;
+  naturalWidth?: number;
+  naturalHeight?: number;
 }
 
 export const ImageDetectTab: React.FC = () => {
-  const { config, addToast, getPestName } = useConfig();
+  const { config, updateConfig, addToast, getPestName } = useConfig();
   const [images, setImages] = useState<ImageItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
@@ -62,6 +67,7 @@ export const ImageDetectTab: React.FC = () => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isComparingSplit, setIsComparingSplit] = useState<boolean>(false);
   const [splitPosition, setSplitPosition] = useState<number>(50);
+  const [isExpandedView, setIsExpandedView] = useState<boolean>(false);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -136,24 +142,61 @@ export const ImageDetectTab: React.FC = () => {
     handleFiles(e.dataTransfer.files);
   };
 
-  // Redraw canvas
+  const currentItem = images[selectedIndex];
+
+  // Dynamic filter detections matching global confidence threshold
+  const effectiveDetections = useMemo(() => {
+    if (!currentItem?.result?.detections) return [];
+    return currentItem.result.detections.filter((d) => d.conf >= config.defaultConf);
+  }, [currentItem?.result?.detections, config.defaultConf]);
+
+  // Recalculate counts dynamically based on effective detections
+  const effectiveCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    effectiveDetections.forEach((d) => {
+      counts[d.cls] = (counts[d.cls] || 0) + 1;
+    });
+    return counts;
+  }, [effectiveDetections]);
+
+  // Outbreak risk assessment dynamically based on effective counts
+  const risk = useMemo(() => {
+    if (!currentItem?.result) return null;
+    return evaluatePestRisk(effectiveCounts);
+  }, [currentItem?.result, effectiveCounts]);
+
+  // Record image natural dimensions on load
+  const handleImageLoaded = () => {
+    if (imgRef.current && currentItem) {
+      const { naturalWidth, naturalHeight } = imgRef.current;
+      setImages((prev) =>
+        prev.map((item, idx) =>
+          idx === selectedIndex ? { ...item, naturalWidth, naturalHeight } : item
+        )
+      );
+    }
+    redrawCanvas();
+  };
+
+  // Redraw canvas with global minConfidence applied
   const redrawCanvas = useCallback(() => {
-    const currentItem = images[selectedIndex];
-    if (!currentItem || !imgRef.current || !canvasRef.current) return;
+    const item = images[selectedIndex];
+    if (!item || !imgRef.current || !canvasRef.current) return;
 
     const img = imgRef.current;
     const canvas = canvasRef.current;
 
-    if (currentItem.result && currentItem.result.detections) {
+    if (item.result && item.result.detections) {
       drawDetections({
         canvas,
         image: img,
-        detections: currentItem.result.detections,
-        originalWidth: currentItem.result.width,
-        originalHeight: currentItem.result.height,
+        detections: item.result.detections,
+        originalWidth: item.result.width,
+        originalHeight: item.result.height,
         showLabels,
         showConfidence,
         filterClass,
+        minConfidence: config.defaultConf,
         highlightIndex: highlightedIndex,
         hoverIndex: hoveredIndex,
         getLabel: (d) => getPestName(d.cls_id ?? d.cls),
@@ -162,7 +205,7 @@ export const ImageDetectTab: React.FC = () => {
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  }, [images, selectedIndex, showLabels, showConfidence, filterClass, highlightedIndex, hoveredIndex, getPestName]);
+  }, [images, selectedIndex, showLabels, showConfidence, filterClass, config.defaultConf, highlightedIndex, hoveredIndex, getPestName]);
 
   useEffect(() => {
     redrawCanvas();
@@ -172,8 +215,8 @@ export const ImageDetectTab: React.FC = () => {
 
   // Handle canvas click to select detection box
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const currentItem = images[selectedIndex];
-    if (!currentItem?.result?.detections || !canvasRef.current || !imgRef.current) return;
+    const item = images[selectedIndex];
+    if (!item?.result?.detections || !canvasRef.current || !imgRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -182,16 +225,17 @@ export const ImageDetectTab: React.FC = () => {
     const hitIndex = findDetectionAtPoint(
       x,
       y,
-      currentItem.result.detections,
+      item.result.detections,
       canvasRef.current.clientWidth,
       canvasRef.current.clientHeight,
-      currentItem.result.width,
-      currentItem.result.height
+      item.result.width,
+      item.result.height,
+      config.defaultConf
     );
 
     if (hitIndex !== null) {
       setHighlightedIndex(hitIndex);
-      const det = currentItem.result.detections[hitIndex];
+      const det = item.result.detections[hitIndex];
       setSelectedPestForModal(det.cls);
     } else {
       setHighlightedIndex(null);
@@ -200,8 +244,8 @@ export const ImageDetectTab: React.FC = () => {
 
   // Handle mouse move on canvas to highlight box on hover
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const currentItem = images[selectedIndex];
-    if (!currentItem?.result?.detections || !canvasRef.current || !imgRef.current) return;
+    const item = images[selectedIndex];
+    if (!item?.result?.detections || !canvasRef.current || !imgRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -210,11 +254,12 @@ export const ImageDetectTab: React.FC = () => {
     const hitIndex = findDetectionAtPoint(
       x,
       y,
-      currentItem.result.detections,
+      item.result.detections,
       canvasRef.current.clientWidth,
       canvasRef.current.clientHeight,
-      currentItem.result.width,
-      currentItem.result.height
+      item.result.width,
+      item.result.height,
+      config.defaultConf
     );
 
     setHoveredIndex(hitIndex);
@@ -261,18 +306,17 @@ export const ImageDetectTab: React.FC = () => {
     }
 
     setIsProcessingAll(false);
-    addToast('success', 'Hoàn tất phân tích', `Đã nhận diện thành công ${successCount} ảnh.`);
+    addToast('success', 'Hoàn tất phân tích', `Đã nhận diện thành công ${successCount} ảnh với ngưỡng tin cậy ${config.defaultConf}.`);
   };
 
-  // Download Standard Annotated Image
+  // Download Standard Annotated Image (only includes effective detections)
   const handleDownloadStandard = async () => {
-    const currentItem = images[selectedIndex];
     if (!currentItem || !imgRef.current || !currentItem.result) return;
 
     try {
       const dataUrl = await exportAnnotatedImage(
         imgRef.current,
-        currentItem.result.detections,
+        effectiveDetections,
         (d) => getPestName(d.cls_id ?? d.cls)
       );
       const link = document.createElement('a');
@@ -287,13 +331,12 @@ export const ImageDetectTab: React.FC = () => {
 
   // Download VIP Executive Report
   const handleDownloadExecutiveReport = async () => {
-    const currentItem = images[selectedIndex];
     if (!currentItem || !imgRef.current || !currentItem.result) return;
 
     try {
       const dataUrl = await exportExecutiveInspectionReport(
         imgRef.current,
-        currentItem.result.detections,
+        effectiveDetections,
         currentItem.file.name,
         currentItem.result.ms,
         config.defaultConf,
@@ -318,11 +361,8 @@ export const ImageDetectTab: React.FC = () => {
     }
   };
 
-  const currentItem = images[selectedIndex];
-  const risk = currentItem?.result?.counts ? evaluatePestRisk(currentItem.result.counts) : null;
-
   // Distinct species in current item for filter dropdown
-  const detectedSpeciesList = currentItem?.result?.counts ? Object.keys(currentItem.result.counts) : [];
+  const detectedSpeciesList = Object.keys(effectiveCounts);
 
   return (
     <div className="space-y-6">
@@ -335,11 +375,10 @@ export const ImageDetectTab: React.FC = () => {
           }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
-            isDragging
+          className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all cursor-pointer ${isDragging
               ? 'border-emerald-500 bg-emerald-500/10 scale-[1.005]'
               : 'border-slate-300 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-sm backdrop-blur-sm'
-          }`}
+            }`}
           onClick={() => {
             document.getElementById('image-file-input')?.click();
           }}
@@ -395,7 +434,7 @@ export const ImageDetectTab: React.FC = () => {
       </div>
 
       {/* Main Workspace when images are loaded */}
-      {images.length > 0 && (
+      {images.length > 0 && currentItem && (
         <div className="space-y-6">
           {/* Thumbnails strip & Batch Action */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -407,11 +446,10 @@ export const ImageDetectTab: React.FC = () => {
                     setSelectedIndex(idx);
                     setHighlightedIndex(null);
                   }}
-                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 cursor-pointer shrink-0 transition-all ${
-                    idx === selectedIndex
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 cursor-pointer shrink-0 transition-all ${idx === selectedIndex
                       ? 'border-emerald-500 scale-105 shadow-md shadow-emerald-500/20'
                       : 'border-transparent opacity-70 hover:opacity-100'
-                  }`}
+                    }`}
                 >
                   <img
                     src={item.previewUrl}
@@ -468,47 +506,85 @@ export const ImageDetectTab: React.FC = () => {
 
           {/* Viewer & Results Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Visual Canvas Display & Interactive Toolbar (Col 8) */}
-            <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm overflow-hidden flex flex-col space-y-3">
+            {/* Visual Canvas Display & Interactive Toolbar */}
+            <div
+              className={`${isExpandedView ? 'lg:col-span-12' : 'lg:col-span-8'
+                } bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col space-y-3.5 transition-all duration-300`}
+            >
               {/* Interactive Toolbar on Canvas */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1 text-xs">
-                {/* Zoom & View Controls */}
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 py-0.5 text-xs">
+                {/* Left: Zoom & Fullscreen Controls */}
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                    <button
+                      onClick={() => setZoomLevel((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
+                      className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                      title="Thu nhỏ ảnh"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="px-1.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      {Math.round(zoomLevel * 100)}%
+                    </span>
+                    <button
+                      onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
+                      className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                      title="Phóng to ảnh"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setZoomLevel(1)}
+                      className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors ml-0.5"
+                      title="Đặt lại kích thước chuẩn"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Expand / Minimize Full-width toggle */}
                   <button
-                    onClick={() => setZoomLevel((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
-                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-                    title="Thu nhỏ"
+                    onClick={() => setIsExpandedView(!isExpandedView)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${isExpandedView
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    title={isExpandedView ? 'Thu gọn hiển thị 2 cột' : 'Mở rộng khung ảnh tối đa (dễ soi côn trùng nhỏ)'}
                   >
-                    <ZoomOut className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="px-1.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                    {Math.round(zoomLevel * 100)}%
-                  </span>
-                  <button
-                    onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
-                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-                    title="Phóng to"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setZoomLevel(1)}
-                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors ml-1"
-                    title="Đặt lại kích thước chuẩn"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    {isExpandedView ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    <span className="hidden sm:inline">{isExpandedView ? 'Thu gọn' : 'Phóng lớn'}</span>
                   </button>
                 </div>
 
-                {/* Display Toggles */}
-                <div className="flex flex-wrap items-center gap-1.5">
+                {/* Center / Right: Global Confidence Slider applied across app */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Confidence Slider directly on toolbar */}
+                  <div
+                    className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60"
+                    title="Ngưỡng tin cậy (Conf) - Thay đổi tại đây sẽ áp dụng đồng bộ cho toàn bộ hệ thống (Ảnh, Video, Camera)"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      Ngưỡng: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{config.defaultConf.toFixed(2)}</span>
+                    </span>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="0.9"
+                      step="0.05"
+                      value={config.defaultConf}
+                      onChange={(e) => updateConfig({ defaultConf: parseFloat(e.target.value) })}
+                      className="w-16 sm:w-24 accent-emerald-600 cursor-pointer h-1.5"
+                    />
+                  </div>
+
+                  {/* Display Toggles */}
                   <button
                     onClick={() => setShowLabels(!showLabels)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
-                      showLabels
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${showLabels
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
-                    }`}
+                      }`}
                   >
                     {showLabels ? <Eye className="w-3 h-3 text-emerald-500" /> : <EyeOff className="w-3 h-3 text-slate-400" />}
                     <span>Nhãn tên</span>
@@ -516,11 +592,10 @@ export const ImageDetectTab: React.FC = () => {
 
                   <button
                     onClick={() => setShowConfidence(!showConfidence)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
-                      showConfidence
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${showConfidence
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
-                    }`}
+                      }`}
                   >
                     <span>% Conf</span>
                   </button>
@@ -548,11 +623,10 @@ export const ImageDetectTab: React.FC = () => {
                   {currentItem.result && (
                     <button
                       onClick={() => setIsComparingSplit(!isComparingSplit)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${
-                        isComparingSplit
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${isComparingSplit
                           ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
-                      }`}
+                        }`}
                       title="So sánh ảnh gốc và kết quả AI"
                     >
                       <SplitSquareVertical className="w-3 h-3" />
@@ -562,10 +636,29 @@ export const ImageDetectTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Main Image Viewport with Pan/Zoom & Split Slider */}
+              {/* Notice when freshly uploaded before analysis */}
+              {currentItem.status === 'idle' && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-medium">
+                    <Scan className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      Ảnh đã tải lên sẵn sàng. Bấm <strong>"Nhận diện bức ảnh này"</strong> để chạy chẩn đoán tự động.
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleProcessAll}
+                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs shadow-sm shadow-emerald-600/20 transition-all shrink-0 self-end sm:self-auto inline-flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Nhận diện bức ảnh này</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Main Image Viewport with Expanded Height for Ultra-Clear Inspection */}
               <div
                 ref={containerRef}
-                className="relative w-full max-h-[600px] overflow-auto rounded-2xl bg-slate-950 flex items-center justify-center border border-slate-900 shadow-inner select-none"
+                className="relative w-full min-h-[500px] sm:min-h-[580px] max-h-[820px] overflow-auto rounded-2xl sm:rounded-3xl bg-slate-950 flex items-center justify-center border border-slate-900 shadow-inner select-none p-2"
               >
                 <div
                   className="relative inline-block transition-transform duration-100 origin-center"
@@ -575,8 +668,8 @@ export const ImageDetectTab: React.FC = () => {
                     ref={imgRef}
                     src={currentItem.previewUrl}
                     alt={currentItem.file.name}
-                    onLoad={redrawCanvas}
-                    className="max-h-[560px] w-auto object-contain block mx-auto"
+                    onLoad={handleImageLoaded}
+                    className="max-h-[760px] w-auto max-w-full object-contain block mx-auto rounded-lg"
                   />
 
                   {/* Overlay Canvas */}
@@ -625,12 +718,20 @@ export const ImageDetectTab: React.FC = () => {
 
               {/* Status footer on image */}
               <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 px-1 border-t border-slate-100 dark:border-slate-800 gap-2">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="font-mono truncate max-w-[220px]">
+                <div className="flex flex-wrap items-center gap-2 truncate">
+                  <span className="font-mono font-medium text-slate-800 dark:text-slate-200 truncate max-w-[220px]">
                     {currentItem.file.name}
                   </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    ({(currentItem.file.size / (1024 * 1024)).toFixed(2)} MB)
+                  </span>
+                  {currentItem.naturalWidth && currentItem.naturalHeight && (
+                    <span className="font-mono text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                      {currentItem.naturalWidth} × {currentItem.naturalHeight} px
+                    </span>
+                  )}
                   {currentItem.result && (
-                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-semibold">
                       <Clock className="w-3 h-3" />
                       {currentItem.result.ms} ms
                     </span>
@@ -660,8 +761,8 @@ export const ImageDetectTab: React.FC = () => {
               </div>
             </div>
 
-            {/* Results & Agro-Intelligence Sidebar (Col 4) */}
-            <div className="lg:col-span-4 space-y-4">
+            {/* Results & Agro-Intelligence Sidebar */}
+            <div className={`${isExpandedView ? 'lg:col-span-12' : 'lg:col-span-4'} space-y-4`}>
               {/* Outbreak Risk Evaluation Card */}
               {risk && (
                 <div className={`p-4 rounded-3xl border shadow-sm space-y-2 transition-all ${risk.bg}`}>
@@ -689,25 +790,31 @@ export const ImageDetectTab: React.FC = () => {
               {/* Main Analysis Results Card */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                    Chi tiết nhận diện
-                  </h3>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      Chi tiết nhận diện
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Đang lọc theo ngưỡng tin cậy <strong className="text-emerald-600 font-mono">{config.defaultConf}</strong>
+                    </p>
+                  </div>
                   {currentItem.result && (
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      {currentItem.result.detections.length} đối tượng
+                      {effectiveDetections.length} đối tượng
                     </span>
                   )}
                 </div>
 
                 {currentItem.status === 'idle' && (
-                  <div className="py-8 text-center text-slate-500 dark:text-slate-400 space-y-2">
+                  <div className="py-8 text-center text-slate-500 dark:text-slate-400 space-y-3">
                     <ImageIcon className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
-                    <p className="text-xs">Chưa phân tích mẫu ảnh này.</p>
+                    <p className="text-xs">Ảnh mẫu đã sẵn sàng trong khung xem phía trên.</p>
                     <button
                       onClick={handleProcessAll}
-                      className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm"
+                      className="px-5 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 inline-flex items-center gap-1.5"
                     >
-                      Bấm để chẩn đoán ngay
+                      <Sparkles className="w-4 h-4" />
+                      <span>Bấm để chẩn đoán ngay</span>
                     </button>
                   </div>
                 )}
@@ -731,15 +838,18 @@ export const ImageDetectTab: React.FC = () => {
 
                 {currentItem.status === 'done' && currentItem.result && (
                   <div className="space-y-4">
-                    {currentItem.result.detections.length === 0 ? (
+                    {effectiveDetections.length === 0 ? (
                       <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/30 text-center space-y-2">
                         <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
                         <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                          Lá lúa khỏe mạnh
+                          Không phát hiện sâu bệnh vượt ngưỡng
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">
                           Không ghi nhận cá thể sâu bệnh nào ở ngưỡng tin cậy{' '}
                           <strong>{config.defaultConf}</strong>.
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          (Thử kéo giảm thanh trượt ngưỡng Conf nếu muốn phát hiện sâu non li ti)
                         </p>
                       </div>
                     ) : (
@@ -750,8 +860,8 @@ export const ImageDetectTab: React.FC = () => {
                             Tổng hợp theo loài:
                           </p>
                           <div className="flex flex-wrap gap-2">
-                            {Object.entries(currentItem.result.counts).map(([name, count]) => {
-                              const det = currentItem.result?.detections.find((d) => d.cls === name);
+                            {Object.entries(effectiveCounts).map(([name, count]) => {
+                              const det = effectiveDetections.find((d) => d.cls === name);
                               return (
                                 <ClassBadge
                                   key={name}
@@ -775,7 +885,7 @@ export const ImageDetectTab: React.FC = () => {
                             Danh sách đối tượng phát hiện:
                           </p>
                           <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 text-xs">
-                            {currentItem.result.detections.map((det, idx) => (
+                            {effectiveDetections.map((det, idx) => (
                               <div
                                 key={idx}
                                 onMouseEnter={() => setHoveredIndex(idx)}
@@ -784,11 +894,10 @@ export const ImageDetectTab: React.FC = () => {
                                   setHighlightedIndex(idx);
                                   setSelectedPestForModal(det.cls);
                                 }}
-                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
-                                  highlightedIndex === idx || hoveredIndex === idx
+                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${highlightedIndex === idx || hoveredIndex === idx
                                     ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm scale-[1.01]'
                                     : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200/60 dark:border-slate-700/60'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -823,3 +932,4 @@ export const ImageDetectTab: React.FC = () => {
     </div>
   );
 };
+

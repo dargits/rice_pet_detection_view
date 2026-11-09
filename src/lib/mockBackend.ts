@@ -40,7 +40,7 @@ export const MOCK_PESTS: PestInfo[] = [
   {
     cls_id: 2,
     cls: 'asiatic_rice_borer',
-    name: 'Sâu đục thân 5 vạch kẻ đầu nâu (Asiatic Rice Borer)',
+    name: 'Sâu đục thân 5 vạch kẻ đầu nâu (hoặc Sâu đục thân bướm 2 chấm / Sâu đục thân châu Á)',
     description: 'Sâu non có 5 sọc nâu tím chạy dọc lưng, đầu màu nâu bóng. Chúng đục vào bẹ lá rồi chui vào trong thân cây lúa cắn đứt bó mạch dẫn nhựa. Gây ra hiện tượng dảnh héo ở thời kỳ đẻ nhánh và bông bạc hoàn toàn ở thời kỳ trỗ chín.',
     prevention: 'Sau thu hoạch cần cày lật đất và ngâm nước diệt nhộng ẩn trong gốc rạ. Bố trí thời vụ gieo cấy tập trung né lứa bướm rộ. Dùng bẫy đèn dự tính dự báo. Khi thấy dảnh héo rải rác hoặc trước trỗ 5-7 ngày phun thuốc có tính lưu dẫn thấm sâu.'
   },
@@ -82,9 +82,9 @@ export const MOCK_PESTS: PestInfo[] = [
   {
     cls_id: 8,
     cls: 'rice_water_weevil',
-    name: 'Súng nước hại lúa / Bọ vòi voi hại lúa (Rice Water Weevil)',
-    description: 'Con trưởng thành là bọ vòi voi màu xám nâu gặm lá non tạo thành các rãnh trắng dọc phiến lá; ấu trùng chui xuống bùn cắn phá rễ lúa làm rễ cụt ngủn, cây lúa còi cọc, vàng úa, dễ đổ ngã và không hấp thụ được dinh dưỡng.',
-    prevention: 'Rút cạn nước ruộng định kỳ (áp dụng tưới ngập khô xen kẽ - AWD) để hạn chế ấu trùng hô hấp và di chuyển dưới bùn. Xử lý hạt giống hoặc rải thuốc hạt xử lý đất khi gieo cấy ở vùng có tiền sử bọ vòi voi gây hại.'
+    name: 'Súng nước hại lúa (hoặc Bọ vòi đôi hại lúa)',
+    description: 'Con trưởng thành là bọ vòi voi/bọ vòi đôi màu xám nâu gặm lá non tạo thành các rãnh trắng dọc phiến lá; ấu trùng chui xuống bùn cắn phá rễ lúa làm rễ cụt ngủn, cây lúa còi cọc, vàng úa, dễ đổ ngã và không hấp thụ được dinh dưỡng.',
+    prevention: 'Rút cạn nước ruộng định kỳ (áp dụng tưới ngập khô xen kẽ - AWD) để hạn chế ấu trùng hô hấp và di chuyển dưới bùn. Xử lý hạt giống hoặc rải thuốc hạt xử lý đất khi gieo cấy ở vùng có tiền sử bọ vòi voi/bọ vòi đôi gây hại.'
   },
   {
     cls_id: 9,

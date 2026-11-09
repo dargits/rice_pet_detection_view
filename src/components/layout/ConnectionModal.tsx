@@ -322,6 +322,9 @@ export const ConnectionModal: React.FC = () => {
                   <span>0.40 (Chuẩn)</span>
                   <span>0.90 (Chính xác cao)</span>
                 </div>
+                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium pt-0.5">
+                  ✓ Áp dụng đồng bộ cho toàn web: Nhận diện Ảnh, Video & Camera trực tiếp.
+                </p>
               </div>
 
               {/* Video Skip Slider */}

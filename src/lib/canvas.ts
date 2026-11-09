@@ -10,6 +10,7 @@ export interface DrawOptions {
   showLabels?: boolean;
   showConfidence?: boolean;
   filterClass?: string; // 'all' or specific class key/name
+  minConfidence?: number; // Filter detections with conf >= minConfidence
   highlightIndex?: number | null;
   hoverIndex?: number | null;
   getLabel?: (det: Detection) => string;
@@ -28,6 +29,7 @@ export function drawDetections({
   showLabels = true,
   showConfidence = true,
   filterClass = 'all',
+  minConfidence = 0,
   highlightIndex = null,
   hoverIndex = null,
   getLabel,
@@ -56,6 +58,11 @@ export function drawDetections({
   const scaleY = displayHeight / origH;
 
   detections.forEach((det, idx) => {
+    // Confidence filter check
+    if (minConfidence > 0 && det.conf < minConfidence) {
+      return;
+    }
+
     // Class filter check
     const isFilteredOut = filterClass !== 'all' && det.cls !== filterClass && String(det.cls_id) !== filterClass;
     const isHighlighted = highlightIndex === idx;
@@ -164,13 +171,17 @@ export function findDetectionAtPoint(
   displayWidth: number,
   displayHeight: number,
   originalWidth: number,
-  originalHeight: number
+  originalHeight: number,
+  minConfidence = 0
 ): number | null {
   const scaleX = displayWidth / originalWidth;
   const scaleY = displayHeight / originalHeight;
 
   // Search in reverse order to hit uppermost box
   for (let i = detections.length - 1; i >= 0; i--) {
+    if (minConfidence > 0 && detections[i].conf < minConfidence) {
+      continue;
+    }
     const [x1, y1, x2, y2] = detections[i].box;
     const sx1 = x1 * scaleX;
     const sy1 = y1 * scaleY;
