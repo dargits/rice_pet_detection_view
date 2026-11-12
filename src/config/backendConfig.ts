@@ -18,10 +18,19 @@ export interface RecentBackendUrlItem {
 }
 
 /**
- * Default fallback Backend URL from Vite environment variables (if configured)
+ * Default fallback Backend URL:
+ * - Bạn có thể điền link Cloudflare Colab cố định vào đây nếu muốn người khác vào web tự nhận link luôn mà không cần gõ gì!
+ * - Ví dụ: export const HARDCODED_BACKEND_URL = "https://rice-pest-backend.trycloudflare.com";
+ */
+export const HARDCODED_BACKEND_URL: string = 'https://makers-exact-men-strikes.trycloudflare.com';
+
+/**
+ * Default fallback Backend URL from Vite environment variables (if configured) or hardcoded
  */
 export const DEFAULT_BACKEND_URL: string = (
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || ''
+  HARDCODED_BACKEND_URL ||
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  ''
 ).trim();
 
 /**
@@ -70,9 +79,10 @@ export function getUrlDisplayLabel(url: string): string {
 /**
  * Retrieves the most recently saved backend URL:
  * Priority:
+ * 0. URL query parameter (?api=... or ?backend=... - Cực tiện khi chia sẻ link cho người khác)
  * 1. Dedicated latest URL key (STORAGE_KEY_LATEST_BACKEND_URL)
  * 2. Legacy AppConfig storage (STORAGE_KEY_LEGACY_CONFIG)
- * 3. Environment variable (VITE_API_URL)
+ * 3. Default fallback / Environment variable (VITE_API_URL or HARDCODED_BACKEND_URL)
  * 4. Empty string
  */
 export function getLatestBackendUrl(): string {
@@ -81,6 +91,16 @@ export function getLatestBackendUrl(): string {
   }
 
   try {
+    // 0. Check URL query parameters (?api=... or ?backend=... or ?server=...)
+    // Cho phép người khác chỉ cần mở link kèm ?api=https://... là tự động lưu và kết nối ngay!
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryUrl = searchParams.get('api') || searchParams.get('backend') || searchParams.get('server');
+    if (queryUrl && queryUrl.trim()) {
+      const normalized = normalizeBackendUrl(queryUrl);
+      saveLatestBackendUrl(normalized, 'Link chia sẻ');
+      return normalized;
+    }
+
     // 1. Check dedicated key
     const directSaved = localStorage.getItem(STORAGE_KEY_LATEST_BACKEND_URL);
     if (directSaved && directSaved.trim()) {
@@ -104,6 +124,20 @@ export function getLatestBackendUrl(): string {
 
   // 3. Fallback to default / environment variable
   return normalizeBackendUrl(DEFAULT_BACKEND_URL);
+}
+
+/**
+ * Tạo đường dẫn chia sẻ 1-click cho người khác (kèm sẵn URL backend hiện tại)
+ * Ví dụ: https://my-rice-app.vercel.app/?api=https://xxxx.trycloudflare.com
+ */
+export function generateShareableUrl(backendUrl?: string): string {
+  if (typeof window === 'undefined') return '';
+  const target = backendUrl || getLatestBackendUrl();
+  if (!target) return window.location.origin;
+
+  const url = new URL(window.location.origin);
+  url.searchParams.set('api', target);
+  return url.toString();
 }
 
 /**

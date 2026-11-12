@@ -19,11 +19,13 @@ import {
   ExternalLink,
   BookOpen,
   History,
+  Share2,
 } from 'lucide-react';
 import { normalizeUrl, fetchHealth } from '../../lib/api';
 import {
   getRecentBackendUrls,
   removeRecentBackendUrl,
+  generateShareableUrl,
   RecentBackendUrlItem,
 } from '../../config/backendConfig';
 import { PestLanguageOption } from '../../types';
@@ -252,9 +254,26 @@ export const ConnectionModal: React.FC = () => {
 
             {/* Backend URL Input */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Backend URL (FastAPI / Cloudflared)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Backend URL (FastAPI / Cloudflared)
+                </label>
+                {apiUrl && !mockMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const shareLink = generateShareableUrl(apiUrl);
+                      navigator.clipboard.writeText(shareLink);
+                      addToast('success', 'Đã sao chép link chia sẻ 1-Click!', 'Người khác bấm link này sẽ tự động kết nối backend mà không bị hỏi.');
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+                    title="Sao chép link web kèm sẵn URL backend này để gửi cho người khác"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    <span>Sao chép Link chia sẻ 1-Click</span>
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="text"
