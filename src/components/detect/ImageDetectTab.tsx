@@ -7,7 +7,7 @@ import {
   exportExecutiveInspectionReport,
   findDetectionAtPoint,
 } from '../../lib/canvas';
-import { evaluatePestRisk } from '../../lib/pestTranslations';
+import { evaluatePestRisk, findPestEntry } from '../../lib/pestTranslations';
 import { Detection, PredictResponse } from '../../types';
 import { ClassBadge } from '../ui/Badge';
 import { SpeciesModal } from '../ui/SpeciesModal';
@@ -38,6 +38,10 @@ import {
   Maximize2,
   Minimize2,
   Scan,
+  Bug,
+  HeartHandshake,
+  FlaskConical,
+  Leaf,
 } from 'lucide-react';
 
 interface ImageItem {
@@ -57,6 +61,7 @@ export const ImageDetectTab: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
   const [selectedPestForModal, setSelectedPestForModal] = useState<string | null>(null);
+  const [inspectedPestKey, setInspectedPestKey] = useState<string | null>(null);
 
   // Canvas interactive settings
   const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -98,27 +103,60 @@ export const ImageDetectTab: React.FC = () => {
   };
 
   // Demo sample loader
-  const loadDemoSample = async (sampleType: 'brown_hopper' | 'leaf_roller' | 'stem_borer') => {
+  const loadDemoSample = async (sampleType: 'brown_hopper' | 'leaf_roller' | 'stem_borer' | 'gall_midge') => {
     const samples = {
       brown_hopper: {
         name: 'mau_ray_nau_mat_do_cao.jpg',
         url: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=1200&q=80',
+        label: 'Rầy nâu',
       },
       leaf_roller: {
         name: 'mau_sau_cuon_la_dong_ruong.jpg',
         url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=1200&q=80',
+        label: 'Sâu cuốn lá',
       },
       stem_borer: {
         name: 'mau_sau_duc_than_hai_danh.jpg',
         url: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+        label: 'Sâu đục thân',
+      },
+      gall_midge: {
+        name: 'mau_muoi_hanh_hai_danh.jpg',
+        url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+        label: 'Muỗi hành',
       },
     };
 
     const s = samples[sampleType];
     try {
-      const res = await fetch(s.url);
-      const blob = await res.blob();
-      const file = new File([blob], s.name, { type: 'image/jpeg' });
+      let file: File;
+      try {
+        const res = await fetch(s.url);
+        if (!res.ok) throw new Error('Fetch failed');
+        const blob = await res.blob();
+        file = new File([blob], s.name, { type: 'image/jpeg' });
+      } catch {
+        // Fallback local generated canvas image if network is offline
+        const off = document.createElement('canvas');
+        off.width = 800;
+        off.height = 600;
+        const ctx = off.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#1e3a1e';
+          ctx.fillRect(0, 0, 800, 600);
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 30px sans-serif';
+          ctx.fillText(`Mẫu đồng ruộng: ${s.label}`, 60, 270);
+          ctx.font = '18px sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('Khảo sát sâu bệnh lúa chuẩn Viện Lúa ĐBSCL (YOLOv11s)', 60, 310);
+        }
+        const fallbackBlob = await new Promise<Blob>((resolve) =>
+          off.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.9)
+        );
+        file = new File([fallbackBlob], s.name, { type: 'image/jpeg' });
+      }
+
       const item: ImageItem = {
         id: Math.random().toString(36).substring(2, 9),
         file,
@@ -127,7 +165,7 @@ export const ImageDetectTab: React.FC = () => {
       };
       setImages((prev) => [...prev, item]);
       setSelectedIndex(images.length);
-      addToast('info', 'Đã tải ảnh mẫu', `Đã thêm mẫu ${s.name} vào danh sách.`);
+      addToast('info', 'Đã tải ảnh mẫu', `Đã thêm mẫu ${s.label} vào danh sách.`);
     } catch {
       addToast('error', 'Lỗi tải ảnh mẫu', 'Không thể kết nối tải ảnh mẫu.');
     }
@@ -164,6 +202,18 @@ export const ImageDetectTab: React.FC = () => {
     if (!currentItem?.result) return null;
     return evaluatePestRisk(effectiveCounts);
   }, [currentItem?.result, effectiveCounts]);
+
+  // Active inspected pest for instant agricultural intelligence
+  const activeInspectedEntry = useMemo(() => {
+    if (inspectedPestKey) {
+      const entry = findPestEntry(inspectedPestKey);
+      if (entry) return entry;
+    }
+    if (effectiveDetections.length > 0) {
+      return findPestEntry(effectiveDetections[0].cls_id ?? effectiveDetections[0].cls);
+    }
+    return null;
+  }, [inspectedPestKey, effectiveDetections]);
 
   // Record image natural dimensions on load
   const handleImageLoaded = () => {
@@ -236,7 +286,7 @@ export const ImageDetectTab: React.FC = () => {
     if (hitIndex !== null) {
       setHighlightedIndex(hitIndex);
       const det = item.result.detections[hitIndex];
-      setSelectedPestForModal(det.cls);
+      setInspectedPestKey(det.cls);
     } else {
       setHighlightedIndex(null);
     }
@@ -429,6 +479,12 @@ export const ImageDetectTab: React.FC = () => {
             className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
           >
             🌾 Mẫu Sâu đục thân
+          </button>
+          <button
+            onClick={() => loadDemoSample('gall_midge')}
+            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+          >
+            🌿 Mẫu Muỗi hành
           </button>
         </div>
       </div>
@@ -892,7 +948,7 @@ export const ImageDetectTab: React.FC = () => {
                                 onMouseLeave={() => setHoveredIndex(null)}
                                 onClick={() => {
                                   setHighlightedIndex(idx);
-                                  setSelectedPestForModal(det.cls);
+                                  setInspectedPestKey(det.cls);
                                 }}
                                 className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${highlightedIndex === idx || hoveredIndex === idx
                                     ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm scale-[1.01]'
@@ -914,6 +970,119 @@ export const ImageDetectTab: React.FC = () => {
                             ))}
                           </div>
                         </div>
+
+                        {/* Inline Agricultural Diagnostic & CLRRI IPM Decision Card */}
+                        {activeInspectedEntry && (
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-50 to-teal-500/5 dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900 border-2 border-emerald-500/25 shadow-sm space-y-2.5">
+                              <div className="flex items-start justify-between gap-2 border-b border-emerald-500/20 pb-2">
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                                    Chẩn đoán loài đang chọn:
+                                  </span>
+                                  <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
+                                    <Bug className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    {activeInspectedEntry.vi}
+                                  </h4>
+                                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                                    {activeInspectedEntry.en} ‹ {activeInspectedEntry.scientific} ›
+                                  </p>
+                                </div>
+
+                                <span
+                                  className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${
+                                    activeInspectedEntry.severity === 'critical'
+                                      ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
+                                      : activeInspectedEntry.severity === 'high'
+                                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                                      : 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
+                                  }`}
+                                >
+                                  {activeInspectedEntry.severity === 'critical'
+                                    ? '🚨 Nguy cấp'
+                                    : activeInspectedEntry.severity === 'high'
+                                    ? '⚠️ Nguy hại cao'
+                                    : '🔍 Trung bình'}
+                                </span>
+                              </div>
+
+                              {/* Sensitive Stages */}
+                              {activeInspectedEntry.damageStages && activeInspectedEntry.damageStages.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <Leaf className="w-3 h-3 text-emerald-500" />
+                                    Giai đoạn mẫn cảm:
+                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {activeInspectedEntry.damageStages.map((st, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-[10px]"
+                                      >
+                                        {st}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Symptoms */}
+                              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/50 dark:border-slate-800 line-clamp-2">
+                                <strong className="text-slate-800 dark:text-slate-200">Triệu chứng:</strong>{' '}
+                                {activeInspectedEntry.symptoms}
+                              </p>
+
+                              {/* Natural Enemies */}
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
+                                  <HeartHandshake className="w-3 h-3" />
+                                  Thiên địch tự nhiên:
+                                </span>
+                                <p className="text-[11px] text-slate-700 dark:text-slate-300 italic">
+                                  {activeInspectedEntry.naturalEnemies.join(', ')}
+                                </p>
+                              </div>
+
+                              {/* Recommended Chemicals */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                                  <FlaskConical className="w-3 h-3" />
+                                  Hoạt chất đặc trị & Thương phẩm:
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {activeInspectedEntry.chemicals.map((ch, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 text-[10px]"
+                                    >
+                                      {ch}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Economic Threshold */}
+                              <div className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-slate-700 dark:text-slate-300 space-y-0.5">
+                                <strong className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">
+                                  Ngưỡng phòng trừ (ET) Viện Lúa:
+                                </strong>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                  {activeInspectedEntry.economicThreshold}
+                                </span>
+                              </div>
+
+                              {/* Button to open full modal */}
+                              <button
+                                onClick={() => setSelectedPestForModal(activeInspectedEntry.key)}
+                                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shadow-emerald-600/20 active:scale-95 inline-flex items-center justify-center gap-1"
+                              >
+                                <span>Xem đầy đủ Bách khoa IPM</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

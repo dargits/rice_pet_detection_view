@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ConfigProvider } from './context/ConfigContext';
 import { Navbar } from './components/layout/Navbar';
 import { HealthAlertBanner } from './components/layout/HealthAlertBanner';
@@ -23,32 +23,84 @@ function PageLoader() {
   );
 }
 
+function AppContent() {
+  const location = useLocation();
+
+  // Track visited routes to lazy-mount and preserve state without clearing when switching tabs
+  const [visited, setVisited] = useState<Set<string>>(() => new Set([location.pathname]));
+
+  useEffect(() => {
+    setVisited((prev) => new Set([...prev, location.pathname]));
+  }, [location.pathname]);
+
+  const isDetect = location.pathname === '/';
+  const isPests = location.pathname === '/pests';
+  const isHistory = location.pathname === '/history';
+  const isStats = location.pathname === '/stats';
+  const isKnownRoute = isDetect || isPests || isHistory || isStats;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
+      <Navbar />
+      <HealthAlertBanner />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Keep-Alive Route Panels: Preserves uploaded files, detections, canvas, and searches */}
+        {visited.has('/') && (
+          <div className={isDetect ? 'block' : 'hidden'}>
+            <Suspense fallback={<PageLoader />}>
+              <DetectPage />
+            </Suspense>
+          </div>
+        )}
+
+        {visited.has('/pests') && (
+          <div className={isPests ? 'block' : 'hidden'}>
+            <Suspense fallback={<PageLoader />}>
+              <PestsPage />
+            </Suspense>
+          </div>
+        )}
+
+        {visited.has('/history') && (
+          <div className={isHistory ? 'block' : 'hidden'}>
+            <Suspense fallback={<PageLoader />}>
+              <HistoryPage />
+            </Suspense>
+          </div>
+        )}
+
+        {visited.has('/stats') && (
+          <div className={isStats ? 'block' : 'hidden'}>
+            <Suspense fallback={<PageLoader />}>
+              <StatsPage />
+            </Suspense>
+          </div>
+        )}
+
+        {!isKnownRoute && (
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        )}
+      </main>
+
+      <Footer />
+
+      {/* Persistent Dialogs and Alerts */}
+      <ConnectionModal />
+      <ToastContainer />
+    </div>
+  );
+}
+
 export function App() {
   return (
     <ConfigProvider>
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
-          <Navbar />
-          <HealthAlertBanner />
-
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<DetectPage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/stats" element={<StatsPage />} />
-                <Route path="/pests" element={<PestsPage />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </Suspense>
-          </main>
-
-          <Footer />
-
-          {/* Persistent Dialogs and Alerts */}
-          <ConnectionModal />
-          <ToastContainer />
-        </div>
+        <AppContent />
       </BrowserRouter>
     </ConfigProvider>
   );

@@ -32,7 +32,11 @@ interface DeviceItem {
   label: string;
 }
 
-export const WebcamDetectTab: React.FC = () => {
+interface WebcamDetectTabProps {
+  isActive?: boolean;
+}
+
+export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = true }) => {
   const { config, updateConfig, addToast, getPestName } = useConfig();
 
   const [isStreaming, setIsStreaming] = useState(false);
@@ -279,6 +283,7 @@ export const WebcamDetectTab: React.FC = () => {
 
   // Frame capture loop with BACKPRESSURE
   const captureAndSendLoop = useCallback(() => {
+    if (!isActive) return;
     if (!videoRef.current) return;
     const video = videoRef.current;
     if (video.readyState < 2) return; // not ready
@@ -375,7 +380,7 @@ export const WebcamDetectTab: React.FC = () => {
       'image/jpeg',
       0.7
     );
-  }, [config.mockMode, checkAudioAlert, getPestName]);
+  }, [isActive, config.mockMode, checkAudioAlert, getPestName]);
 
   // Start webcam
   const handleStartStream = async () => {

@@ -8,6 +8,7 @@ import {
   StatsResponse,
   Detection,
 } from '../types';
+import { PEST_DATABASE_10 } from './pestTranslations';
 
 export const MOCK_CLASSES: Record<string, string> = {
   '0': 'rice_leaf_roller',
@@ -22,78 +23,20 @@ export const MOCK_CLASSES: Record<string, string> = {
   '9': 'rice_leafhopper',
 };
 
-export const MOCK_PESTS: PestInfo[] = [
-  {
-    cls_id: 0,
-    cls: 'rice_leaf_roller',
-    name: 'Sâu cuốn lá lúa (Rice Leaf Roller)',
-    description: 'Sâu non nhả tơ kết mép lá lúa lại thành tổ hình ống tròn rồi ẩn nấp bên trong gặm ăn chất xanh diệp lục, chỉ chừa lại lớp biểu bì mỏng màu trắng xơ xác. Ruộng bị hại nặng trông trắng bạc, suy giảm nghiêm trọng khả năng quang hợp, làm hạt lép lửng.',
-    prevention: 'Không bón thừa phân đạm. Bón phân cân đối N-P-K theo từng giai đoạn. Thường xuyên thăm đồng, khi phát hiện mật độ bướm rộ 4-6 ngày thì tiến hành phun trừ sâu non tuổi 1-2. Ưu tiên chế phẩm vi sinh Bacillus thuringiensis (Bt) hoặc thuốc có hoạt chất Indoxacarb, Emamectin benzoate, Chlorantraniliprole.'
-  },
-  {
-    cls_id: 1,
-    cls: 'rice_leaf_caterpillar',
-    name: 'Sâu đo lúa / Sâu ăn lá lúa (Rice Leaf Caterpillar)',
-    description: 'Sâu non ăn khuyết mép lá lúa, trường hợp mật độ cao có thể cắn trụi toàn bộ phiến lá chỉ chừa lại gân chính, đặc biệt nguy hại ở giai đoạn mạ và lúa đẻ nhánh. Sâu có tập tính di chuyển kiểu uốn cong mình như sâu đo.',
-    prevention: 'Vệ sinh sạch cỏ dại bờ ruộng trước mùa vụ. Bảo tồn các loài thiên địch tự nhiên như nhện giăng, bọ rùa, ong ký sinh. Khi mật độ sâu cao vượt ngưỡng kinh tế, phun thuốc trừ sâu gốc sinh học hoặc các nhóm thuốc tiếp xúc, vị độc.'
-  },
-  {
-    cls_id: 2,
-    cls: 'asiatic_rice_borer',
-    name: 'Sâu đục thân 5 vạch kẻ đầu nâu (hoặc Sâu đục thân bướm 2 chấm / Sâu đục thân châu Á)',
-    description: 'Sâu non có 5 sọc nâu tím chạy dọc lưng, đầu màu nâu bóng. Chúng đục vào bẹ lá rồi chui vào trong thân cây lúa cắn đứt bó mạch dẫn nhựa. Gây ra hiện tượng dảnh héo ở thời kỳ đẻ nhánh và bông bạc hoàn toàn ở thời kỳ trỗ chín.',
-    prevention: 'Sau thu hoạch cần cày lật đất và ngâm nước diệt nhộng ẩn trong gốc rạ. Bố trí thời vụ gieo cấy tập trung né lứa bướm rộ. Dùng bẫy đèn dự tính dự báo. Khi thấy dảnh héo rải rác hoặc trước trỗ 5-7 ngày phun thuốc có tính lưu dẫn thấm sâu.'
-  },
-  {
-    cls_id: 3,
-    cls: 'yellow_rice_borer',
-    name: 'Sâu đục thân bướm 2 chấm (Yellow Rice Borer)',
-    description: 'Bướm cái màu vàng nhạt, giữa mỗi cánh trước có một chấm đen rõ nét. Sâu non màu trắng sữa hoặc vàng nhạt, đục rỗng thân lúa làm gãy gục dảnh và bông bạc trắng xơ. Đây là một trong những loài dịch hại nguy hiểm và phổ biến nhất trên cây lúa.',
-    prevention: 'Ngắt ổ trứng sâu khi thăm đồng lúc lúa con gái. Thu hoạch lúa sát mặt đất. Khi bướm rộ đẻ nhánh hoặc lúa bắt đầu trỗ le te (5%), phun các dòng thuốc đặc trị đục thân như Chlorantraniliprole, Cartap hoặc Fipronil.'
-  },
-  {
-    cls_id: 4,
-    cls: 'rice_gall_midge',
-    name: 'Muỗi hành / Muỗi đầu nguyễn (Rice Gall Midge)',
-    description: 'Muỗi có kích thước nhỏ như muỗi nhà, màu nâu vàng. Ấu trùng xâm nhập vào đỉnh sinh trưởng của chồi non, tiết dịch kích thích bẹ lá biến dạng cuộn tròn lại thành ống rỗng màu trắng xám gọi là "cọng hành" (ống năn). Chồi bị hại không trỗ bông được, cây đẻ nhiều chồi vô hiệu.',
-    prevention: 'Không sạ quá dày. Giữ mực nước ruộng hợp lý, tránh để ruộng khô hạn kéo dài tạo điều kiện muỗi phát triển. Bón phân NPK cân đối, tránh thừa đạm. Phun hoặc rải thuốc hạt gốc lưu dẫn khi phát hiện lứa muỗi rộ ở giai đoạn đầu vụ.'
-  },
-  {
-    cls_id: 5,
-    cls: 'brown_plant_hopper',
-    name: 'Rầy nâu (Brown Plant Hopper)',
-    description: 'Rầy nâu trưởng thành và rầy non tập trung chích hút nhựa ở phần gốc thân cây lúa. Khi mật độ quá cao gây hiện tượng "cháy rầy" từng chòm rồi lan rộng cả ruộng. Đặc biệt nguy hiểm, rầy nâu là môi giới truyền hai bệnh virus nan y: Vàng lùn và Lùn xoắn lá.',
-    prevention: 'Thực hiện chương trình "3 giảm 3 tăng", "1 phải 5 giảm". Gieo sạ né rầy đồng loạt theo lịch của ngành nông nghiệp. Bảo vệ thiên địch (bọ xít nước, nhện ăn thịt, bọ ba khoang). Khi mật độ trên 3 con/tép, phun các thuốc đặc trị ức chế lột xác (Pymetrozine, Buprofezin, Triflumezopyrim).'
-  },
-  {
-    cls_id: 6,
-    cls: 'white_backed_plant_hopper',
-    name: 'Rầy lưng trắng (White-backed Plant Hopper)',
-    description: 'Trên mảnh lưng ngực giữa có vệt trắng rõ rệt. Cả con trưởng thành và ấu trùng đều chích hút nhựa cây, làm lá lúa vàng úa, cây còi cọc và lùn tịt. Là véc-tơ truyền bệnh lùn sọc đen hại lúa rất khó cứu chữa.',
-    prevention: 'Chọn giống kháng rầy hoặc giống xác nhận sạch bệnh. Thường xuyên vạch gốc lúa kiểm tra mật độ ổ rầy non. Xử lý thuốc đặc trị lưu dẫn kịp thời ngay khi phát hiện rầy mới nở tuổi 1-2.'
-  },
-  {
-    cls_id: 7,
-    cls: 'small_brown_plant_hopper',
-    name: 'Rầy nâu nhỏ (Small Brown Plant Hopper)',
-    description: 'Kích thước nhỏ hơn rầy nâu thường, cánh trong suốt hoặc có đốm mờ, sinh sống chủ yếu ở các vùng trồng lúa ôn đới và nhiệt đới. Chích hút làm suy kiệt cây lúa và là môi giới truyền bệnh sọc lá virus (Rice Stripe Virus).',
-    prevention: 'Vệ sinh bờ ruộng sạch tàn dư ký chủ vụ trước. Thăm đồng định kỳ và sử dụng bẫy đèn vàng để giám sát mật độ bầy rầy di trú. Phun trừ bằng thuốc ức chế thần kinh côn trùng nhóm neonicotinoid hoặc pymetrozine.'
-  },
-  {
-    cls_id: 8,
-    cls: 'rice_water_weevil',
-    name: 'Súng nước hại lúa (hoặc Bọ vòi đôi hại lúa)',
-    description: 'Con trưởng thành là bọ vòi voi/bọ vòi đôi màu xám nâu gặm lá non tạo thành các rãnh trắng dọc phiến lá; ấu trùng chui xuống bùn cắn phá rễ lúa làm rễ cụt ngủn, cây lúa còi cọc, vàng úa, dễ đổ ngã và không hấp thụ được dinh dưỡng.',
-    prevention: 'Rút cạn nước ruộng định kỳ (áp dụng tưới ngập khô xen kẽ - AWD) để hạn chế ấu trùng hô hấp và di chuyển dưới bùn. Xử lý hạt giống hoặc rải thuốc hạt xử lý đất khi gieo cấy ở vùng có tiền sử bọ vòi voi/bọ vòi đôi gây hại.'
-  },
-  {
-    cls_id: 9,
-    cls: 'rice_leafhopper',
-    name: 'Rầy xanh đuôi đen / Rầy lá lúa (Rice Leafhopper)',
-    description: 'Thân có màu xanh lục sáng, chóp cánh trước có đốm màu đen đặc trưng. Rầy di chuyển nhanh nhẹn, thường bay nhảy trên tán lá chích hút nhựa lá non và là môi giới truyền bệnh vàng lụi Tungro nguy hiểm.',
-    prevention: 'Bảo tồn đàn bọ rùa và ong ký sinh trứng. Dùng vợt bắt bọ xít/rầy lá lúc sáng sớm. Khi mật độ cao đe dọa truyền bệnh virus, phun các loại thuốc có tác dụng tiếp xúc và xông hơi nhanh.'
-  }
-];
+export const MOCK_PESTS: PestInfo[] = PEST_DATABASE_10.map((p) => ({
+  cls_id: p.id,
+  cls: p.key,
+  name: `${p.vi} (${p.en})`,
+  description: `${p.morphology}\n\nTriệu chứng gây hại: ${p.symptoms}`,
+  prevention: `${p.prevention}\n\nQuy trình IPM Viện Lúa ĐBSCL: ${p.clrriIpm.culturalMeasures} ${p.clrriIpm.chemicalStrategy}`,
+  scientific: p.scientific,
+  enName: p.en,
+  severity: p.severity,
+  damageStages: p.damageStages,
+  naturalEnemies: p.naturalEnemies,
+  symptoms: p.symptoms,
+  chemicals: p.chemicals,
+}));
 
 export const MOCK_HISTORY: HistoryItem[] = [
   {
