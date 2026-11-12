@@ -18,8 +18,14 @@ import {
   Check,
   ExternalLink,
   BookOpen,
+  History,
 } from 'lucide-react';
 import { normalizeUrl, fetchHealth } from '../../lib/api';
+import {
+  getRecentBackendUrls,
+  removeRecentBackendUrl,
+  RecentBackendUrlItem,
+} from '../../config/backendConfig';
 import { PestLanguageOption } from '../../types';
 
 export const ConnectionModal: React.FC = () => {
@@ -34,6 +40,7 @@ export const ConnectionModal: React.FC = () => {
   const [mockMode, setMockMode] = useState(config.mockMode);
   const [pestLanguage, setPestLanguageState] = useState<PestLanguageOption>(config.pestLanguage || 'vi');
 
+  const [recentUrls, setRecentUrls] = useState<RecentBackendUrlItem[]>(getRecentBackendUrls);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -52,6 +59,7 @@ export const ConnectionModal: React.FC = () => {
       setVideoSkip(config.videoSkip);
       setMockMode(config.mockMode);
       setPestLanguageState(config.pestLanguage || 'vi');
+      setRecentUrls(getRecentBackendUrls());
       setTestResult(null);
     }
   }, [isSettingsOpen, config]);
@@ -265,6 +273,63 @@ export const ConnectionModal: React.FC = () => {
                 <HelpCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 Hệ thống tự động thêm <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">https://</code> nếu bạn quên. Mỗi lần Colab chạy lại, link Cloudflared sẽ thay đổi.
               </p>
+
+              {/* Recently saved backend URLs */}
+              {recentUrls.length > 0 && !mockMode && (
+                <div className="pt-2 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                      <History className="w-3.5 h-3.5" />
+                      URL đã lưu gần đây ({recentUrls.length}):
+                    </span>
+                    <span className="text-[10px] text-slate-400 italic">
+                      Nhấp để chọn nhanh
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                    {recentUrls.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-mono transition-all border group ${
+                          apiUrl === item.url
+                            ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setApiUrl(item.url);
+                            setTestResult(null);
+                          }}
+                          className="flex items-center gap-1 text-left truncate max-w-[220px] sm:max-w-[280px]"
+                          title={`Bấm để điền URL này (${item.url})`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${apiUrl === item.url ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          <span className="truncate">{item.url}</span>
+                          {item.label && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-400 shrink-0 font-sans">
+                              {item.label}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const next = removeRecentBackendUrl(item.url);
+                            setRecentUrls(next);
+                          }}
+                          className="opacity-40 group-hover:opacity-100 hover:text-rose-500 transition-opacity p-0.5 ml-0.5"
+                          title="Xóa URL này khỏi lịch sử"
+                        >
+                          <XCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* API Key Input */}

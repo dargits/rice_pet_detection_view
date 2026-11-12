@@ -19,35 +19,24 @@ import {
   generateMockImagePrediction,
 } from './mockBackend';
 
-const CONFIG_STORAGE_KEY = 'rice_pest_ai_config';
+import {
+  getLatestBackendUrl,
+  saveLatestBackendUrl,
+  normalizeBackendUrl,
+  STORAGE_KEY_LEGACY_CONFIG,
+} from '../config/backendConfig';
 
-/**
- * Normalizes user-provided Backend URL:
- * - trim whitespace
- * - remove trailing slashes
- * - add https:// if protocol is missing
- */
-export function normalizeUrl(url: string): string {
-  if (!url) return '';
-  let cleaned = url.trim();
-  // Remove trailing slashes
-  cleaned = cleaned.replace(/\/+$/, '');
-  // Auto prepend https:// if missing protocol
-  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-    cleaned = 'https://' + cleaned;
-  }
-  return cleaned;
-}
+export const normalizeUrl = normalizeBackendUrl;
 
 export function getSavedConfig(): AppConfig {
   const isMockParam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mock') === '1';
 
   try {
-    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY_LEGACY_CONFIG);
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        apiUrl: normalizeUrl(parsed.apiUrl || (import.meta.env.VITE_API_URL as string) || ''),
+        apiUrl: getLatestBackendUrl(),
         apiKey: parsed.apiKey || '',
         defaultConf: typeof parsed.defaultConf === 'number' ? parsed.defaultConf : 0.4,
         videoSkip: typeof parsed.videoSkip === 'number' ? parsed.videoSkip : 3,
@@ -60,7 +49,7 @@ export function getSavedConfig(): AppConfig {
   }
 
   return {
-    apiUrl: normalizeUrl((import.meta.env.VITE_API_URL as string) || ''),
+    apiUrl: getLatestBackendUrl(),
     apiKey: '',
     defaultConf: 0.4,
     videoSkip: 3,
@@ -71,13 +60,15 @@ export function getSavedConfig(): AppConfig {
 
 export function saveConfig(config: Partial<AppConfig>): AppConfig {
   const current = getSavedConfig();
+  const targetUrl = config.apiUrl !== undefined ? saveLatestBackendUrl(config.apiUrl) : current.apiUrl;
+
   const updated: AppConfig = {
     ...current,
     ...config,
-    apiUrl: config.apiUrl !== undefined ? normalizeUrl(config.apiUrl) : current.apiUrl,
+    apiUrl: targetUrl,
   };
   try {
-    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY_LEGACY_CONFIG, JSON.stringify(updated));
   } catch (e) {
     console.error('Lỗi khi lưu config:', e);
   }
