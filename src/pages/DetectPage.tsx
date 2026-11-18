@@ -47,7 +47,7 @@ export const DetectPage: React.FC = () => {
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
               <Sparkles className="w-3 h-3 text-emerald-500" />
-              YOLOv11s • 10 Lớp Sâu Bệnh
+              YOLOv11s • 10 loài sâu bệnh
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
               <ShieldCheck className="w-3 h-3 text-blue-500" />
@@ -55,10 +55,10 @@ export const DetectPage: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-            Trung tâm Nhận diện Sâu Bệnh Hại Lúa
+            Nhận diện và phân loại sâu bệnh hại lúa
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Phân tích hình ảnh mẫu ruộng thực địa, khoanh vùng tọa độ chính xác, thống kê mật độ cá thể và đề xuất quy trình Quản lý Dịch hại Tổng hợp (IPM).
+            Phân tích hình ảnh mẫu ruộng thực địa, khoanh vùng tọa độ chính xác, thống kê mật độ cá thể và đề xuất quy trình quản lý dịch hại tổng hợp (IPM).
           </p>
         </div>
 

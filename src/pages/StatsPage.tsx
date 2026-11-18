@@ -173,7 +173,7 @@ export const StatsPage: React.FC = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
             <BarChart3 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Báo cáo & Thống kê Dịch hại
+            Báo cáo và thống kê dịch hại
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Phân tích tần suất xuất hiện, xu hướng theo thời gian và cơ cấu nguồn thu thập
@@ -191,7 +191,7 @@ export const StatsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* VIP Health Index & Severity Breakdown Row */}
+      {/* Health Index & Severity Breakdown Row */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Field Health Score Card (Col 6) */}
         <div className="md:col-span-6 p-5 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-500/20 shadow-sm flex flex-col justify-between space-y-4">
@@ -202,7 +202,7 @@ export const StatsPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                  Chỉ số Sức khỏe Ruộng Lúa (Field Health Index)
+                  Chỉ số sức khỏe ruộng lúa
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Ước tính tự động dựa trên tần suất rầy nâu, sâu đục thân và mật độ dịch hại
@@ -255,7 +255,7 @@ export const StatsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-amber-500" />
               <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Phân bổ theo Mức độ Nguy hại Dịch bệnh
+                Phân bổ theo mức độ nguy hại dịch bệnh
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
@@ -265,7 +265,7 @@ export const StatsPage: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-rose-700 dark:text-rose-400 block">
+              <span className="text-xs font-bold text-rose-700 dark:text-rose-400 block">
                 Nguy cấp (Critical)
               </span>
               <span className="text-xl font-extrabold text-rose-900 dark:text-rose-200 font-mono block mt-1">
@@ -277,7 +277,7 @@ export const StatsPage: React.FC = () => {
             </div>
 
             <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-amber-700 dark:text-amber-400 block">
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block">
                 Nguy cơ cao (High)
               </span>
               <span className="text-xl font-extrabold text-amber-900 dark:text-amber-200 font-mono block mt-1">
@@ -289,7 +289,7 @@ export const StatsPage: React.FC = () => {
             </div>
 
             <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-blue-700 dark:text-blue-400 block">
+              <span className="text-xs font-bold text-blue-700 dark:text-blue-400 block">
                 Trung bình (Medium)
               </span>
               <span className="text-xl font-extrabold text-blue-900 dark:text-blue-200 font-mono block mt-1">

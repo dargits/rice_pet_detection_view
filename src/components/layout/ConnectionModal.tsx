@@ -255,8 +255,8 @@ export const ConnectionModal: React.FC = () => {
             {/* Backend URL Input */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Backend URL (FastAPI / Cloudflared)
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Địa chỉ Backend URL (FastAPI / Cloudflared)
                 </label>
                 {apiUrl && !mockMode && (
                   <button
@@ -353,8 +353,8 @@ export const ConnectionModal: React.FC = () => {
 
             {/* API Key Input */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Khóa bí mật API Key (Tùy chọn)
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Khóa bí mật API key (tùy chọn)
               </label>
               <div className="relative">
                 <input

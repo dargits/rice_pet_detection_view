@@ -51,7 +51,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
   const [errorText, setErrorText] = useState<string | null>(null);
   const [selectedPestForModal, setSelectedPestForModal] = useState<string | null>(null);
 
-  // VIP Features
+  // Audio alert settings
   const [isAudioAlertEnabled, setIsAudioAlertEnabled] = useState<boolean>(false);
   const [lastAlertTime, setLastAlertTime] = useState<number>(0);
 
@@ -706,7 +706,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
                 )}
               </div>
               <div className="text-xs">
-                <span className="font-extrabold uppercase tracking-wider">
+                <span className="font-bold">
                   Trực tiếp: {liveRisk.title}
                 </span>
                 <p className="mt-0.5 leading-relaxed font-medium opacity-90">

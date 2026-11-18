@@ -34,6 +34,8 @@ import {
   CheckCircle2,
   Sliders,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   SplitSquareVertical,
   Maximize2,
   Minimize2,
@@ -73,6 +75,9 @@ export const ImageDetectTab: React.FC = () => {
   const [isComparingSplit, setIsComparingSplit] = useState<boolean>(false);
   const [splitPosition, setSplitPosition] = useState<number>(50);
   const [isExpandedView, setIsExpandedView] = useState<boolean>(false);
+  const [showDetectionsList, setShowDetectionsList] = useState<boolean>(false);
+  const [showRiskDetail, setShowRiskDetail] = useState<boolean>(false);
+  const [showInspectedDetails, setShowInspectedDetails] = useState<boolean>(false);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -379,7 +384,7 @@ export const ImageDetectTab: React.FC = () => {
     }
   };
 
-  // Download VIP Executive Report
+  // Download Executive Inspection Report
   const handleDownloadExecutiveReport = async () => {
     if (!currentItem || !imgRef.current || !currentItem.result) return;
 
@@ -396,7 +401,7 @@ export const ImageDetectTab: React.FC = () => {
       link.href = dataUrl;
       link.download = `rice_pest_executive_report_${currentItem.file.name.replace(/\.[^/.]+$/, '')}.jpg`;
       link.click();
-      addToast('success', 'Đã xuất phiếu giám định VIP', 'Báo cáo giám định chuyên sâu đã được tải xuống.');
+      addToast('success', 'Đã xuất phiếu giám định', 'Báo cáo giám định chuyên sâu đã được tải xuống.');
     } catch {
       addToast('error', 'Lỗi xuất báo cáo', 'Không thể tạo phiếu giám định.');
     }
@@ -768,7 +773,7 @@ export const ImageDetectTab: React.FC = () => {
                     onChange={(e) => setSplitPosition(Number(e.target.value))}
                     className="w-full accent-blue-600"
                   />
-                  <span className="text-emerald-500 font-semibold text-[11px] shrink-0">AI Bounding Box</span>
+                  <span className="text-emerald-500 font-semibold text-[11px] shrink-0">Khung nhận diện AI</span>
                 </div>
               )}
 
@@ -799,18 +804,18 @@ export const ImageDetectTab: React.FC = () => {
                     <button
                       onClick={handleDownloadStandard}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] transition-colors"
-                      title="Tải ảnh đã vẽ box"
+                      title="Tải ảnh đã vẽ khung nhận diện"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Tải ảnh Bounding Box
+                      Tải ảnh nhận diện
                     </button>
                     <button
                       onClick={handleDownloadExecutiveReport}
                       className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm shadow-emerald-600/20 transition-all"
-                      title="Xuất phiếu giám định dịch hại nông nghiệp VIP"
+                      title="Xuất phiếu giám định dịch hại nông nghiệp"
                     >
                       <FileCheck className="w-3.5 h-3.5" />
-                      Xuất Báo cáo Giám sát VIP
+                      Xuất báo cáo giám định
                     </button>
                   </div>
                 )}
@@ -821,7 +826,7 @@ export const ImageDetectTab: React.FC = () => {
             <div className={`${isExpandedView ? 'lg:col-span-12' : 'lg:col-span-4'} space-y-4`}>
               {/* Outbreak Risk Evaluation Card */}
               {risk && (
-                <div className={`p-4 rounded-3xl border shadow-sm space-y-2 transition-all ${risk.bg}`}>
+                <div className={`p-4 rounded-3xl border shadow-sm space-y-2.5 transition-all ${risk.bg}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-sm">
                       {risk.level === 'critical' ? (
@@ -833,13 +838,24 @@ export const ImageDetectTab: React.FC = () => {
                       )}
                       <span>{risk.title}</span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowRiskDetail(!showRiskDetail)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 shrink-0"
+                    >
+                      <span>{showRiskDetail ? 'Thu gọn' : 'Xem chi tiết'}</span>
+                      {showRiskDetail ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                   <p className="text-xs leading-relaxed opacity-95">
                     {risk.message}
                   </p>
-                  <div className="pt-2 border-t border-current/15 text-[11px] leading-relaxed">
-                    <strong>Khuyến cáo IPM:</strong> {risk.recommendedAction}
-                  </div>
+                  {showRiskDetail && (
+                    <div className="pt-2 border-t border-current/15 text-[11px] leading-relaxed animate-in fade-in">
+                      <strong>Khuyến cáo IPM:</strong> {risk.recommendedAction}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -912,7 +928,7 @@ export const ImageDetectTab: React.FC = () => {
                       <>
                         {/* Breakdown summary by class */}
                         <div className="space-y-2">
-                          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                             Tổng hợp theo loài:
                           </p>
                           <div className="flex flex-wrap gap-2">
@@ -935,63 +951,80 @@ export const ImageDetectTab: React.FC = () => {
                           </p>
                         </div>
 
-                        {/* Interactive Detections List */}
-                        <div className="space-y-1.5">
-                          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                            Danh sách đối tượng phát hiện:
-                          </p>
-                          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 text-xs">
-                            {effectiveDetections.map((det, idx) => (
-                              <div
-                                key={idx}
-                                onMouseEnter={() => setHoveredIndex(idx)}
-                                onMouseLeave={() => setHoveredIndex(null)}
-                                onClick={() => {
-                                  setHighlightedIndex(idx);
-                                  setInspectedPestKey(det.cls);
-                                }}
-                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${highlightedIndex === idx || hoveredIndex === idx
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm scale-[1.01]'
-                                    : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200/60 dark:border-slate-700/60'
+                        {/* Interactive Detections List - Collapsible with toggle button */}
+                        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setShowDetectionsList(!showDetectionsList)}
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <span>Danh sách đối tượng phát hiện</span>
+                              <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-bold">
+                                {effectiveDetections.length}
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                              <span>{showDetectionsList ? 'Thu gọn' : 'Bấm để xổ'}</span>
+                              {showDetectionsList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </span>
+                          </button>
+
+                          {showDetectionsList && (
+                            <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 text-xs animate-in fade-in duration-150">
+                              {effectiveDetections.map((det, idx) => (
+                                <div
+                                  key={idx}
+                                  onMouseEnter={() => setHoveredIndex(idx)}
+                                  onMouseLeave={() => setHoveredIndex(null)}
+                                  onClick={() => {
+                                    setHighlightedIndex(idx);
+                                    setInspectedPestKey(det.cls);
+                                  }}
+                                  className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                    highlightedIndex === idx || hoveredIndex === idx
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm scale-[1.01]'
+                                      : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200/60 dark:border-slate-700/60'
                                   }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                    #{idx + 1} {getPestName(det.cls_id ?? det.cls)}
-                                  </span>
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                      #{idx + 1} {getPestName(det.cls_id ?? det.cls)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                      {(det.conf * 100).toFixed(1)}%
+                                    </span>
+                                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                    {(det.conf * 100).toFixed(1)}%
-                                  </span>
-                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        {/* Inline Agricultural Diagnostic & CLRRI IPM Decision Card */}
+                        {/* Inline Agricultural Diagnostic & CLRRI IPM Decision Card - Collapsible */}
                         {activeInspectedEntry && (
-                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
-                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-50 to-teal-500/5 dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900 border-2 border-emerald-500/25 shadow-sm space-y-2.5">
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5 animate-in fade-in">
+                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-50 to-teal-500/5 dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900 border border-emerald-500/25 shadow-sm space-y-2.5">
                               <div className="flex items-start justify-between gap-2 border-b border-emerald-500/20 pb-2">
                                 <div>
-                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                                     <Sparkles className="w-3 h-3 text-emerald-500" />
                                     Chẩn đoán loài đang chọn:
                                   </span>
-                                  <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
+                                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
                                     <Bug className="w-4 h-4 text-emerald-600 shrink-0" />
                                     {activeInspectedEntry.vi}
                                   </h4>
-                                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                                     {activeInspectedEntry.en} ‹ {activeInspectedEntry.scientific} ›
                                   </p>
                                 </div>
 
                                 <span
-                                  className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${
+                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
                                     activeInspectedEntry.severity === 'critical'
                                       ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
                                       : activeInspectedEntry.severity === 'high'
@@ -1000,84 +1033,99 @@ export const ImageDetectTab: React.FC = () => {
                                   }`}
                                 >
                                   {activeInspectedEntry.severity === 'critical'
-                                    ? '🚨 Nguy cấp'
+                                    ? 'Nguy cấp'
                                     : activeInspectedEntry.severity === 'high'
-                                    ? '⚠️ Nguy hại cao'
-                                    : '🔍 Trung bình'}
+                                    ? 'Nguy cơ cao'
+                                    : 'Trung bình'}
                                 </span>
                               </div>
 
-                              {/* Sensitive Stages */}
-                              {activeInspectedEntry.damageStages && activeInspectedEntry.damageStages.length > 0 && (
-                                <div className="space-y-1">
-                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                    <Leaf className="w-3 h-3 text-emerald-500" />
-                                    Giai đoạn mẫn cảm:
-                                  </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {activeInspectedEntry.damageStages.map((st, i) => (
-                                      <span
-                                        key={i}
-                                        className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-[10px]"
-                                      >
-                                        {st}
+                              {/* Toggle Button for Inspected Details */}
+                              <button
+                                type="button"
+                                onClick={() => setShowInspectedDetails(!showInspectedDetails)}
+                                className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-semibold transition-colors"
+                              >
+                                <span>{showInspectedDetails ? 'Thu gọn chi tiết' : 'Xem chi tiết thiên địch & phòng trừ'}</span>
+                                {showInspectedDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+
+                              {/* Expanded Detailed Sections */}
+                              {showInspectedDetails && (
+                                <div className="space-y-2 pt-1 border-t border-emerald-500/15 animate-in fade-in duration-150">
+                                  {/* Sensitive Stages */}
+                                  {activeInspectedEntry.damageStages && activeInspectedEntry.damageStages.length > 0 && (
+                                    <div className="space-y-1">
+                                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        <Leaf className="w-3 h-3 text-emerald-500" />
+                                        Giai đoạn mẫn cảm:
                                       </span>
-                                    ))}
+                                      <div className="flex flex-wrap gap-1">
+                                        {activeInspectedEntry.damageStages.map((st, i) => (
+                                          <span
+                                            key={i}
+                                            className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-[10px]"
+                                          >
+                                            {st}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Symptoms */}
+                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                                    <strong className="text-slate-800 dark:text-slate-200">Triệu chứng:</strong>{' '}
+                                    {activeInspectedEntry.symptoms}
+                                  </p>
+
+                                  {/* Natural Enemies */}
+                                  <div className="space-y-0.5">
+                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
+                                      <HeartHandshake className="w-3 h-3" />
+                                      Thiên địch tự nhiên:
+                                    </span>
+                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 italic">
+                                      {activeInspectedEntry.naturalEnemies.join(', ')}
+                                    </p>
+                                  </div>
+
+                                  {/* Recommended Chemicals */}
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                                      <FlaskConical className="w-3 h-3" />
+                                      Hoạt chất đặc trị & thuốc thương phẩm:
+                                    </span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {activeInspectedEntry.chemicals.map((ch, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 text-[10px]"
+                                        >
+                                          {ch}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Economic Threshold */}
+                                  <div className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-slate-700 dark:text-slate-300 space-y-0.5">
+                                    <strong className="text-amber-800 dark:text-amber-300 block text-[10px] font-bold">
+                                      Ngưỡng phòng trừ kinh tế (ET):
+                                    </strong>
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                      {activeInspectedEntry.economicThreshold}
+                                    </span>
                                   </div>
                                 </div>
                               )}
-
-                              {/* Symptoms */}
-                              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/50 dark:border-slate-800 line-clamp-2">
-                                <strong className="text-slate-800 dark:text-slate-200">Triệu chứng:</strong>{' '}
-                                {activeInspectedEntry.symptoms}
-                              </p>
-
-                              {/* Natural Enemies */}
-                              <div className="space-y-0.5">
-                                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
-                                  <HeartHandshake className="w-3 h-3" />
-                                  Thiên địch tự nhiên:
-                                </span>
-                                <p className="text-[11px] text-slate-700 dark:text-slate-300 italic">
-                                  {activeInspectedEntry.naturalEnemies.join(', ')}
-                                </p>
-                              </div>
-
-                              {/* Recommended Chemicals */}
-                              <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                                  <FlaskConical className="w-3 h-3" />
-                                  Hoạt chất đặc trị & Thương phẩm:
-                                </span>
-                                <div className="flex flex-wrap gap-1">
-                                  {activeInspectedEntry.chemicals.map((ch, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 text-[10px]"
-                                    >
-                                      {ch}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Economic Threshold */}
-                              <div className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-slate-700 dark:text-slate-300 space-y-0.5">
-                                <strong className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">
-                                  Ngưỡng phòng trừ (ET) Viện Lúa:
-                                </strong>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                  {activeInspectedEntry.economicThreshold}
-                                </span>
-                              </div>
 
                               {/* Button to open full modal */}
                               <button
                                 onClick={() => setSelectedPestForModal(activeInspectedEntry.key)}
                                 className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shadow-emerald-600/20 active:scale-95 inline-flex items-center justify-center gap-1"
                               >
-                                <span>Xem đầy đủ Bách khoa IPM</span>
+                                <span>Xem đầy đủ bách khoa IPM</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>

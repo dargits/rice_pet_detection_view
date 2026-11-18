@@ -56,7 +56,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
           </div>
           <div>
             <span className="font-extrabold text-base tracking-tight">
-              Bách khoa Thư Côn trùng Hại Lúa
+              Bách khoa côn trùng hại lúa
             </span>
             <span className="text-[11px] font-mono ml-2 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
               Chuẩn Viện Lúa ĐBSCL
@@ -86,7 +86,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
 
             <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
               <span
-                className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
                   pest?.severity === 'critical'
                     ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
                     : pest?.severity === 'high'
@@ -149,7 +149,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-1.5">
               <h4 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-                Đặc điểm hình thái & Nhận diện:
+                Đặc điểm hình thái và nhận diện:
               </h4>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-xs sm:text-[13px]">
                 {pest?.morphology || pest?.symptoms || 'Đang cập nhật đặc điểm hình thái.'}
@@ -161,7 +161,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
               <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-1.5">
                 <h4 className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  Vòng đời sinh học & Chu kỳ phát triển:
+                  Vòng đời sinh học và chu kỳ phát triển:
                 </h4>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-xs sm:text-[13px]">
                   {pest.lifecycle}
@@ -218,7 +218,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
 
             {/* Detailed list of natural enemies */}
             <div className="space-y-2">
-              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                 Các loài thiên địch chủ lực:
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -281,7 +281,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
             <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/25 space-y-1">
               <h4 className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-purple-600" />
-                Danh mục Hoạt chất & Thuốc Đặc trị Thế hệ mới:
+                Danh mục hoạt chất và thuốc đặc trị thế hệ mới:
               </h4>
               <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
                 Chỉ sử dụng thuốc bảo vệ thực vật khi mật độ sâu hại vượt ngưỡng phòng trừ kinh tế (ET).
@@ -343,7 +343,7 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
             <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 space-y-1.5">
               <h4 className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Ngưỡng Phòng trừ Kinh tế (ET) Chuẩn Viện Lúa ĐBSCL:
+                Ngưỡng phòng trừ kinh tế (ET) chuẩn Viện Lúa ĐBSCL:
               </h4>
               <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
                 {pest?.clrriIpm?.economicThreshold || pest?.economicThreshold || 'Đang cập nhật ngưỡng ET.'}

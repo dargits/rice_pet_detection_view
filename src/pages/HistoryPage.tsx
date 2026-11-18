@@ -249,7 +249,7 @@ export const HistoryPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-semibold">
                 <th className="py-3.5 px-4">Thời gian</th>
                 <th className="py-3.5 px-4">Nguồn</th>
                 <th className="py-3.5 px-4">Tên file / Mẫu</th>
@@ -425,7 +425,7 @@ export const HistoryPage: React.FC = () => {
                   )}
                 </div>
                 <div className="text-xs">
-                  <span className="font-bold uppercase tracking-wider">
+                  <span className="font-bold">
                     {selectedItemRisk.title}
                   </span>
                   <p className="mt-0.5 opacity-90">{selectedItemRisk.message}</p>
@@ -487,8 +487,8 @@ export const HistoryPage: React.FC = () => {
             {/* Detections List */}
             {selectedItem.detections && selectedItem.detections.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Danh sách bounding boxes phát hiện:
+                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Danh sách đối tượng phát hiện:
                 </h4>
                 <div className="max-h-56 overflow-y-auto space-y-1.5 text-xs pr-1">
                   {selectedItem.detections.map((d: Detection, idx: number) => (
