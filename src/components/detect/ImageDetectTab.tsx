@@ -115,23 +115,6 @@ export const ImageDetectTab: React.FC = () => {
   const telemetryRef = useRef<HTMLDivElement>(null);
   const [isTelemetryVisible, setIsTelemetryVisible] = useState<boolean>(false);
 
-  useEffect(() => {
-    const el = telemetryRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsTelemetryVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [currentItem]);
-
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -239,6 +222,24 @@ export const ImageDetectTab: React.FC = () => {
   };
 
   const currentItem = images[selectedIndex];
+
+  // Scroll into view animation observer for telemetry & benchmarks dashboard
+  useEffect(() => {
+    const el = telemetryRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsTelemetryVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [currentItem]);
 
   // Dynamic filter detections matching global confidence threshold
   const effectiveDetections = useMemo(() => {
