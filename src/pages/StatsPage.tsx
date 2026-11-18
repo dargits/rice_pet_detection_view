@@ -167,15 +167,15 @@ export const StatsPage: React.FC = () => {
   }, [stats?.by_day]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-4 animate-in fade-in duration-150">
       {/* Heading */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80 dark:border-slate-800/80">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Báo cáo và thống kê dịch hại
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Phân tích tần suất xuất hiện, xu hướng theo thời gian và cơ cấu nguồn thu thập
           </p>
         </div>
@@ -184,24 +184,24 @@ export const StatsPage: React.FC = () => {
           onClick={loadStats}
           disabled={loading}
           aria-label="Làm mới thống kê"
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors self-start sm:self-auto"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới số liệu</span>
         </button>
       </div>
 
       {/* Health Index & Severity Breakdown Row */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
         {/* Field Health Score Card (Col 6) */}
-        <div className="md:col-span-6 p-5 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-500/20 shadow-sm flex flex-col justify-between space-y-4">
+        <div className="md:col-span-6 p-4 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-500/20 shadow-sm flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-emerald-600 text-white">
-                <HeartPulse className="w-5 h-5" />
+              <div className="p-1.5 rounded-lg bg-emerald-600 text-white">
+                <HeartPulse className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100">
                   Chỉ số sức khỏe ruộng lúa
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -210,7 +210,7 @@ export const StatsPage: React.FC = () => {
               </div>
             </div>
             <span
-              className={`text-2xl font-mono font-black ${
+              className={`text-xl sm:text-2xl font-mono font-black ${
                 fieldHealthScore >= 75
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : fieldHealthScore >= 50
@@ -222,8 +222,8 @@ export const StatsPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-300/40 dark:border-slate-700">
+          <div className="space-y-1">
+            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-300/40 dark:border-slate-700">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   fieldHealthScore >= 75
@@ -235,13 +235,13 @@ export const StatsPage: React.FC = () => {
                 style={{ width: `${fieldHealthScore}%` }}
               />
             </div>
-            <div className="flex justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-              <span>0 (Dịch hại nghiêm trọng)</span>
+            <div className="flex justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+              <span>0 (Dịch hại nặng)</span>
               <span>
                 {fieldHealthScore >= 75
                   ? '🌱 Trạng thái an toàn'
                   : fieldHealthScore >= 50
-                  ? '⚠️ Cần giám sát chặt chẽ'
+                  ? '⚠️ Cần giám sát'
                   : '🚨 Cảnh báo bùng phát dịch'}
               </span>
               <span>100 (Ruộng khỏe mạnh)</span>
@@ -250,11 +250,11 @@ export const StatsPage: React.FC = () => {
         </div>
 
         {/* Severity Classification (Col 6) */}
-        <div className="md:col-span-6 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-amber-500" />
-              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+        <div className="md:col-span-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+            <div className="flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-amber-500" />
+              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100">
                 Phân bổ theo mức độ nguy hại dịch bệnh
               </h3>
             </div>
@@ -263,12 +263,12 @@ export const StatsPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40">
               <span className="text-xs font-bold text-rose-700 dark:text-rose-400 block">
-                Nguy cấp (Critical)
+                Nguy cấp
               </span>
-              <span className="text-xl font-extrabold text-rose-900 dark:text-rose-200 font-mono block mt-1">
+              <span className="text-lg font-extrabold text-rose-900 dark:text-rose-200 font-mono block mt-0.5">
                 {severityBreakdown.critical}
               </span>
               <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80">
@@ -276,11 +276,11 @@ export const StatsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-900/40">
               <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block">
-                Nguy cơ cao (High)
+                Nguy cơ cao
               </span>
-              <span className="text-xl font-extrabold text-amber-900 dark:text-amber-200 font-mono block mt-1">
+              <span className="text-lg font-extrabold text-amber-900 dark:text-amber-200 font-mono block mt-0.5">
                 {severityBreakdown.high}
               </span>
               <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80">
@@ -288,11 +288,11 @@ export const StatsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
+            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
               <span className="text-xs font-bold text-blue-700 dark:text-blue-400 block">
-                Trung bình (Medium)
+                Trung bình
               </span>
-              <span className="text-xl font-extrabold text-blue-900 dark:text-blue-200 font-mono block mt-1">
+              <span className="text-lg font-extrabold text-blue-900 dark:text-blue-200 font-mono block mt-0.5">
                 {severityBreakdown.medium}
               </span>
               <span className="text-[10px] text-blue-600/80 dark:text-blue-400/80">
@@ -304,71 +304,71 @@ export const StatsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Card 1 */}
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span>Tổng lượt phân tích</span>
             <Layers className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
             {totalRecords}
           </div>
-          <p className="text-[11px] text-slate-400">Ảnh, Video và phiên trực tiếp</p>
+          <p className="text-[10px] text-slate-400">Ảnh, video và trực tiếp</p>
         </div>
 
         {/* Card 2 */}
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span>Tổng đối tượng phát hiện</span>
             <Bug className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
             {totalDetections}
           </div>
-          <p className="text-[11px] text-slate-400">Côn trùng gây hại được ghi nhận</p>
+          <p className="text-[10px] text-slate-400">Côn trùng gây hại ghi nhận</p>
         </div>
 
         {/* Card 3 */}
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span>Loài phổ biến nhất</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
+          <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
             {mostFrequentPest ? getPestName(mostFrequentPest[0]) : 'Chưa có'}
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[10px] text-slate-400">
             {mostFrequentPest ? `${mostFrequentPest[1]} cá thể ghi nhận` : '—'}
           </p>
         </div>
 
         {/* Card 4 */}
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span>Mật độ phát hiện TB</span>
             <TrendingUp className="w-4 h-4 text-purple-500" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
             {totalRecords > 0 ? (totalDetections / totalRecords).toFixed(1) : '0'}
           </div>
-          <p className="text-[11px] text-slate-400">Đối tượng / một lượt kiểm tra</p>
+          <p className="text-[10px] text-slate-400">Đối tượng / một lượt kiểm tra</p>
         </div>
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Bar Chart: By Class (Col 7) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Bug className="w-4 h-4 text-emerald-500" />
               Số lượng phát hiện theo từng loài côn trùng
             </h3>
             <span className="text-xs text-slate-400">{classChartData.length} loài</span>
           </div>
 
-          <div className="h-72 w-full">
+          <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={classChartData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
@@ -401,15 +401,15 @@ export const StatsPage: React.FC = () => {
         </div>
 
         {/* Pie Chart: By Source (Col 5) */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <PieChartIcon className="w-4 h-4 text-blue-500" />
               Cơ cấu nguồn dữ liệu khảo sát
             </h3>
           </div>
 
-          <div className="h-72 w-full flex items-center justify-center">
+          <div className="h-60 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -447,15 +447,15 @@ export const StatsPage: React.FC = () => {
         </div>
 
         {/* Area / Trend Chart: By Day with Time Filter (Col 12) */}
-        <div className="lg:col-span-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <div className="lg:col-span-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-emerald-500" />
               Biến động mật độ sâu hại theo thời gian (theo ngày)
             </h3>
 
             {/* Time filter */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
               {[
                 { id: '7d', label: '7 ngày qua' },
                 { id: '30d', label: '30 ngày qua' },
@@ -464,7 +464,7 @@ export const StatsPage: React.FC = () => {
                 <button
                   key={opt.id}
                   onClick={() => setTimeFilter(opt.id as any)}
-                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+                  className={`px-2 py-0.5 text-[11px] font-semibold rounded-lg transition-all ${
                     timeFilter === opt.id
                       ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -476,7 +476,7 @@ export const StatsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-80 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dayChartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                 <defs>

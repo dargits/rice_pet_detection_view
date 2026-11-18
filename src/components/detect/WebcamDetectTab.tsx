@@ -476,9 +476,9 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
   }, [currentCounts]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Controls Bar */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Device selector */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Camera className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -635,9 +635,9 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
       )}
 
       {/* Main View Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Stream & Canvas (Col 8) */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col items-center justify-center">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm flex flex-col items-center justify-center">
           <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 shadow-inner flex items-center justify-center">
             <video
               ref={videoRef}
@@ -653,8 +653,8 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
 
             {!isStreaming && (
               <div className="text-center p-8 text-slate-400 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto text-slate-600 border border-slate-800">
-                  <Camera className="w-8 h-8" />
+                <div className="w-14 h-14 rounded-full bg-slate-900 flex items-center justify-center mx-auto text-slate-600 border border-slate-800">
+                  <Camera className="w-7 h-7" />
                 </div>
                 <p className="text-sm font-semibold text-slate-300">
                   Camera chưa hoạt động
@@ -666,7 +666,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
             )}
           </div>
 
-          <div className="w-full flex items-center justify-between pt-3 px-2 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 mt-3">
+          <div className="w-full flex items-center justify-between pt-2.5 px-1 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 mt-2.5">
             <span className="flex items-center gap-1.5">
               <span
                 className={`w-2 h-2 rounded-full ${
@@ -682,14 +682,14 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
         </div>
 
         {/* Real-time counters (Col 4) */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-3">
           {/* Live Outbreak Risk Pill */}
           {isStreaming && (
             <div
-              className={`p-4 rounded-2xl border shadow-sm flex items-start gap-3 ${liveRisk.bg}`}
+              className={`p-3 rounded-2xl border shadow-sm flex items-start gap-2.5 ${liveRisk.bg}`}
             >
               <div
-                className={`p-2 rounded-xl text-white shrink-0 ${
+                className={`p-1.5 rounded-xl text-white shrink-0 ${
                   liveRisk.level === 'critical'
                     ? 'bg-rose-600'
                     : liveRisk.level === 'warning'
@@ -717,7 +717,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
           )}
 
           {/* Current Frame Breakdown */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 Khung hình hiện tại
@@ -729,7 +729,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
 
             {currentDetections.length > 0 ? (
               <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {Object.entries(currentCounts).map(([name, count]) => {
                     const det = currentDetections.find((d) => d.cls === name);
                     return (
@@ -754,7 +754,7 @@ export const WebcamDetectTab: React.FC<WebcamDetectTabProps> = ({ isActive = tru
           </div>
 
           {/* Session Cumulative Observed Species */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 Loài từng thấy trong phiên
