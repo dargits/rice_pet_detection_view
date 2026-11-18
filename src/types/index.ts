@@ -52,6 +52,8 @@ export interface PredictResponse {
   counts: Record<string, number>;
   detections: Detection[];
   image_b64?: string;
+  image_width?: number;
+  image_height?: number;
 }
 
 export interface VideoFrameDetection {

@@ -221,8 +221,8 @@ export const ImageDetectTab: React.FC = () => {
 
   const surfaceCoveragePercent = useMemo(() => {
     if (effectiveDetections.length === 0) return 0;
-    const imgW = currentItem?.naturalWidth || currentItem?.result?.image_width || 640;
-    const imgH = currentItem?.naturalHeight || currentItem?.result?.image_height || 640;
+    const imgW = currentItem?.naturalWidth || currentItem?.result?.width || currentItem?.result?.image_width || 640;
+    const imgH = currentItem?.naturalHeight || currentItem?.result?.height || currentItem?.result?.image_height || 640;
     const totalImgArea = imgW * imgH;
     if (totalImgArea <= 0) return 0;
 
