@@ -13,6 +13,29 @@ import { ClassBadge } from '../ui/Badge';
 import { SpeciesModal } from '../ui/SpeciesModal';
 import { getClassColor } from '../../lib/colors';
 import {
+  MATRIX_CLASSES,
+  NORMALIZED_CONFUSION_MATRIX,
+  PER_CLASS_BENCHMARKS,
+  PR_CURVE_DATA,
+  F1_CONFIDENCE_CURVE,
+  MODEL_SPECS,
+} from '../../lib/modelBenchmarks';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  CartesianGrid,
+  AreaChart,
+  Area,
+  ReferenceLine,
+  LineChart,
+  Line,
+} from 'recharts';
+import {
   UploadCloud,
   ImageIcon,
   Download,
@@ -49,6 +72,9 @@ import {
   Activity,
   Gauge,
   BarChart3,
+  Grid3X3,
+  TrendingUp,
+  Layers,
 } from 'lucide-react';
 
 interface ImageItem {
@@ -83,6 +109,28 @@ export const ImageDetectTab: React.FC = () => {
   const [showDetectionsList, setShowDetectionsList] = useState<boolean>(false);
   const [showRiskDetail, setShowRiskDetail] = useState<boolean>(false);
   const [showInspectedDetails, setShowInspectedDetails] = useState<boolean>(false);
+  const [analyticsTab, setAnalyticsTab] = useState<'sample' | 'matrix' | 'curves'>('sample');
+  const [curveSubTab, setCurveSubTab] = useState<'map_pr' | 'f1_conf' | 'specs'>('map_pr');
+  const [hoveredMatrixCell, setHoveredMatrixCell] = useState<{ row: number; col: number; val: number } | null>(null);
+  const telemetryRef = useRef<HTMLDivElement>(null);
+  const [isTelemetryVisible, setIsTelemetryVisible] = useState<boolean>(false);
+
+  useEffect(() => {
+    const el = telemetryRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsTelemetryVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [currentItem]);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -885,165 +933,616 @@ export const ImageDetectTab: React.FC = () => {
                 )}
               </div>
 
-              {/* Real Image Telemetry & Species Distribution Chart */}
-              <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
-                {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              {/* Real Image Telemetry, Confusion Matrix & Model Curves Dashboard */}
+              <div
+                ref={telemetryRef}
+                className={`w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4 transition-all duration-700 transform ${
+                  isTelemetryVisible
+                    ? 'opacity-100 translate-y-0 scale-100 shadow-slate-200/50 dark:shadow-none'
+                    : 'opacity-40 translate-y-6 scale-[0.99]'
+                }`}
+              >
+                {/* Header with Mode Switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                       <BarChart3 className="w-5 h-5" />
                     </div>
                     <div>
                       <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        Chỉ số phân tích & Biểu đồ thực tế của ảnh
+                        Chỉ số phân tích & Đánh giá mô hình YOLO11s
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Đo lường trực tiếp từ mô hình YOLO11s trên mẫu lá lúa đang hiển thị
+                        Độ đo mẫu ảnh thực tế, Ma trận nhầm lẫn và Đồ thị Precision - Recall
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                    {currentItem.naturalWidth && currentItem.naturalHeight && (
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
-                        {currentItem.naturalWidth} × {currentItem.naturalHeight} px
+                  {/* Mode Tabs Switcher */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/70 dark:border-slate-700/60 text-xs font-semibold self-start sm:self-auto shrink-0 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => setAnalyticsTab('sample')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                        analyticsTab === 'sample'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Ảnh hiện tại</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAnalyticsTab('matrix')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                        analyticsTab === 'matrix'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Grid3X3 className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Ma trận nhầm lẫn</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAnalyticsTab('curves')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                        analyticsTab === 'curves'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 text-purple-500" />
+                      <span>Đồ thị PR & mAP</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* TAB 1: Current Image Live Telemetry & Species Chart */}
+                {analyticsTab === 'sample' && (
+                  <div className="space-y-3.5 animate-in fade-in-50 duration-200">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                      {currentItem.naturalWidth && currentItem.naturalHeight && (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
+                          {currentItem.naturalWidth} × {currentItem.naturalHeight} px
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">
+                        Conf lọc: ≥ {config.defaultConf.toFixed(2)}
                       </span>
+                    </div>
+
+                    {/* 4 KPI Metrics Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-emerald-500/40 transition-colors">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                          Số cá thể phát hiện
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                            {effectiveDetections.length}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium">đối tượng</span>
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                          {Object.keys(effectiveCounts).length} loài dịch hại
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-blue-500/40 transition-colors">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                          Độ tin cậy trung bình
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl sm:text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+                            {meanConfidence > 0 ? `${meanConfidence.toFixed(1)}%` : '0%'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                          {effectiveDetections.length > 0 ? `Cao nhất: ${maxConfidence.toFixed(1)}%` : 'Không có đối tượng'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-purple-500/40 transition-colors">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                          Thời gian suy luận
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl sm:text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                            {currentItem.result?.ms ? `${currentItem.result.ms} ms` : 'Chờ quét'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                          {currentItem.result?.ms
+                            ? `Tương đương ~${(1000 / currentItem.result.ms).toFixed(1)} FPS`
+                            : 'GPU CUDA ready'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-amber-500/40 transition-colors">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                          Mật độ che phủ lá
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+                            {surfaceCoveragePercent > 0 ? `${surfaceCoveragePercent.toFixed(1)}%` : '0%'}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium">diện tích</span>
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                          {surfaceCoveragePercent >= 5 ? 'Nguy cơ lây lan cao' : surfaceCoveragePercent > 0 ? 'Xâm nhiễm cục bộ' : 'Bề mặt an toàn'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Species Confidence Distribution Chart & Breakdown */}
+                    {speciesChartData.length > 0 ? (
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <Activity className="w-4 h-4 text-emerald-500" />
+                            Biểu đồ phân bố độ tin cậy theo loài trong mẫu ảnh:
+                          </span>
+                          <span className="text-xs text-slate-500 font-mono">
+                            {speciesChartData.length} loài được phát hiện
+                          </span>
+                        </div>
+
+                        {/* Horizontal Visual Progress Bars */}
+                        <div className="space-y-2">
+                          {speciesChartData.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5 hover:shadow-sm transition-all"
+                            >
+                              <div className="flex items-center justify-between text-xs sm:text-sm">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="w-3 h-3 rounded-full shrink-0"
+                                    style={{ backgroundColor: item.color }}
+                                  />
+                                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                                    {item.name}
+                                  </span>
+                                  <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-600">
+                                    {item.count} cá thể
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 font-mono">
+                                  <span className="text-xs text-slate-500">Độ tin cậy TB:</span>
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                    {item.avgConf}%
+                                  </span>
+                                  <span className="text-xs text-slate-400 hidden sm:inline">
+                                    (Cao nhất: {item.maxConf}%)
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-1000 ease-out"
+                                  style={{
+                                    width: isTelemetryVisible ? `${Math.max(5, item.avgConf)}%` : '0%',
+                                    backgroundColor: item.color,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                        Không ghi nhận đối tượng sâu hại nào vượt ngưỡng tin cậy trên mẫu ảnh này.
+                      </div>
                     )}
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">
-                      Conf lọc: ≥ {config.defaultConf.toFixed(2)}
-                    </span>
                   </div>
-                </div>
+                )}
 
-                {/* 4 KPI Metrics Grid - Clear, readable, real data */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {/* Metric 1: Total detected pests */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
-                      Số cá thể phát hiện
-                    </span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                        {effectiveDetections.length}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">đối tượng</span>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                      {Object.keys(effectiveCounts).length} loài dịch hại
-                    </span>
-                  </div>
+                {/* TAB 2: Interactive Normalized Confusion Matrix Heatmap */}
+                {analyticsTab === 'matrix' && (
+                  <div className="space-y-3.5 animate-in fade-in-50 duration-200">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          <Grid3X3 className="w-4 h-4 text-emerald-500" />
+                          Ma trận nhầm lẫn chuẩn hóa (Normalized Confusion Matrix) YOLO11s
+                        </h5>
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Hàng: Nhãn thực tế (True Class) • Cột: Nhãn dự đoán (Predicted Class) • Màu càng đậm độ chuẩn xác càng cao
+                        </p>
+                      </div>
 
-                  {/* Metric 2: Mean confidence */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
-                      Độ tin cậy trung bình
-                    </span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl sm:text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
-                        {meanConfidence > 0 ? `${meanConfidence.toFixed(1)}%` : '0%'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                      {effectiveDetections.length > 0 ? `Cao nhất: ${maxConfidence.toFixed(1)}%` : 'Không có đối tượng'}
-                    </span>
-                  </div>
-
-                  {/* Metric 3: Inference latency & FPS */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
-                      Thời gian suy luận
-                    </span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl sm:text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
-                        {currentItem.result?.ms ? `${currentItem.result.ms} ms` : 'Chờ quét'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                      {currentItem.result?.ms
-                        ? `Tương đương ~${(1000 / currentItem.result.ms).toFixed(1)} FPS`
-                        : 'GPU CUDA ready'}
-                    </span>
-                  </div>
-
-                  {/* Metric 4: Surface coverage */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
-                      Mật độ che phủ lá
-                    </span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
-                        {surfaceCoveragePercent > 0 ? `${surfaceCoveragePercent.toFixed(1)}%` : '0%'}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">diện tích</span>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                      {surfaceCoveragePercent >= 5 ? 'Nguy cơ lây lan cao' : surfaceCoveragePercent > 0 ? 'Xâm nhiễm cục bộ' : 'Bề mặt an toàn'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Species Confidence Distribution Chart & Breakdown */}
-                {speciesChartData.length > 0 ? (
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Activity className="w-4 h-4 text-emerald-500" />
-                        Biểu đồ phân bố độ tin cậy theo loài trong mẫu ảnh:
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">
-                        {speciesChartData.length} loài được phát hiện
-                      </span>
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/20">
+                          Độ chính xác đường chéo: 90.8%
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Horizontal Visual Progress Bars */}
-                    <div className="space-y-2">
-                      {speciesChartData.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5"
+                    {/* Interactive Heatmap Matrix Grid */}
+                    <div className="overflow-x-auto pb-2 scrollbar-thin">
+                      <div className="min-w-[620px]">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-300 text-center pb-1">
+                          <div className="col-span-1 text-left font-semibold text-slate-400 truncate">
+                            True \ Pred
+                          </div>
+                          {MATRIX_CLASSES.map((cls, idx) => (
+                            <div
+                              key={idx}
+                              className="col-span-1 p-1 rounded-md bg-slate-100 dark:bg-slate-800/80 truncate"
+                              title={cls}
+                            >
+                              {idx + 1}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Matrix Rows */}
+                        <div className="space-y-1">
+                          {NORMALIZED_CONFUSION_MATRIX.map((row, rIdx) => (
+                            <div key={rIdx} className="grid grid-cols-12 gap-1 items-center">
+                              {/* Row Header Label */}
+                              <div
+                                className="col-span-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate text-left pr-1"
+                                title={`${rIdx + 1}. ${MATRIX_CLASSES[rIdx]}`}
+                              >
+                                <span className="font-mono text-slate-400 mr-1">{rIdx + 1}.</span>
+                                {MATRIX_CLASSES[rIdx].replace('Sâu ', '').replace('Rầy ', '')}
+                              </div>
+
+                              {/* Row Cells */}
+                              {row.map((val, cIdx) => {
+                                const isDiagonal = rIdx === cIdx;
+                                const isHovered =
+                                  hoveredMatrixCell?.row === rIdx && hoveredMatrixCell?.col === cIdx;
+
+                                return (
+                                  <div
+                                    key={cIdx}
+                                    onMouseEnter={() => setHoveredMatrixCell({ row: rIdx, col: cIdx, val })}
+                                    onMouseLeave={() => setHoveredMatrixCell(null)}
+                                    className={`col-span-1 py-1.5 rounded-lg text-center font-mono text-[10px] sm:text-[11px] transition-all cursor-pointer select-none ${
+                                      isHovered
+                                        ? 'ring-2 ring-blue-500 scale-110 z-10 shadow-md font-bold'
+                                        : ''
+                                    } ${
+                                      val >= 0.9
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : val >= 0.7
+                                        ? 'bg-emerald-500 text-white font-semibold'
+                                        : val >= 0.2
+                                        ? 'bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100'
+                                        : val > 0.02
+                                        ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold'
+                                        : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600'
+                                    }`}
+                                    title={`Thực tế: ${MATRIX_CLASSES[rIdx]} | Dự đoán: ${MATRIX_CLASSES[cIdx]} | Tỉ lệ: ${(val * 100).toFixed(1)}%`}
+                                  >
+                                    {(val * 100).toFixed(0)}%
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Color Scale Legend */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">Thang màu xác suất:</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded bg-emerald-600 inline-block shrink-0 shadow-sm" />
+                          <span>≥ 90% (Xuất sắc)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded bg-emerald-500 inline-block shrink-0" />
+                          <span>70 - 89% (Tốt)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 inline-block shrink-0" />
+                          <span>3 - 20% (Nhiễu chéo)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 inline-block shrink-0" />
+                          <span>&lt; 3% (Hiếm)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Matrix Hover Information Pill */}
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between text-xs gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          Chi tiết ô được chọn:
+                        </span>
+                        {hoveredMatrixCell ? (
+                          <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold">
+                            Thực tế: <strong className="text-slate-900 dark:text-slate-100">{MATRIX_CLASSES[hoveredMatrixCell.row]}</strong> ➔ Dự đoán: <strong className="text-slate-900 dark:text-slate-100">{MATRIX_CLASSES[hoveredMatrixCell.col]}</strong> (Xác suất: {(hoveredMatrixCell.val * 100).toFixed(1)}%)
+                            {hoveredMatrixCell.row === hoveredMatrixCell.col ? ' • ✓ Phân loại chính xác' : ' • ⚠ Nhầm lẫn chéo'}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">
+                            (Rê chuột vào từng ô ma trận phía trên để xem tỷ lệ phân loại chéo chi tiết)
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
+                        <span>Lớp chuẩn nhất: <strong className="text-emerald-600">Rầy nâu (95%)</strong></span>
+                        <span>Nhiễu nền: <strong className="text-blue-600">&lt; 2.1%</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Key Findings Chips */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300">
+                        <span className="font-bold block mb-0.5">🌾 Rầy nâu ít nhầm lẫn nhất</span>
+                        <span>Đạt 95% độ chính xác do đặc trưng hình thái vệt cánh và màu thân sẫm rất rõ.</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-amber-800 dark:text-amber-300">
+                        <span className="font-bold block mb-0.5">⚠️ Nhầm lẫn Đục thân (4%)</span>
+                        <span>Đục thân 5 vạch và 2 chấm có tỷ lệ nhầm lẫn 4% vì giai đoạn ấu trùng non tương tự nhau.</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/20 text-blue-800 dark:text-blue-300">
+                        <span className="font-bold block mb-0.5">🍃 Phân biệt nền lá tốt</span>
+                        <span>Tỷ lệ báo ảo từ nền lá hoặc gân lúa (False Positives) chỉ chiếm 2.1% trên toàn bộ tập test.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: Precision-Recall Curves & Model Evaluation */}
+                {analyticsTab === 'curves' && (
+                  <div className="space-y-4 transition-opacity duration-300">
+                    {/* Sub-nav selector inside curves tab */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCurveSubTab('map_pr')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            curveSubTab === 'map_pr'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
                         >
-                          <div className="flex items-center justify-between text-xs sm:text-sm">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-3 h-3 rounded-full shrink-0"
-                                style={{ backgroundColor: item.color }}
-                              />
-                              <span className="font-bold text-slate-800 dark:text-slate-200">
-                                {item.name}
-                              </span>
-                              <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-600">
-                                {item.count} cá thể
-                              </span>
-                            </div>
+                          Biểu đồ mAP@50 & PR Curve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCurveSubTab('f1_conf')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            curveSubTab === 'f1_conf'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          Đường cong F1 vs Confidence
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCurveSubTab('specs')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            curveSubTab === 'specs'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          Thông số kiến trúc YOLO11s
+                        </button>
+                      </div>
 
-                            <div className="flex items-center gap-2 font-mono">
-                              <span className="text-xs text-slate-500">Độ tin cậy TB:</span>
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                                {item.avgConf}%
-                              </span>
-                              <span className="text-xs text-slate-400 hidden sm:inline">
-                                (Cao nhất: {item.maxConf}%)
-                              </span>
-                            </div>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Kiểm thử trên 1.520 mẫu ảnh thực địa
+                      </span>
+                    </div>
+
+                    {/* Sub-view 1: mAP@50 & PR Curve */}
+                    {curveSubTab === 'map_pr' && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Chart 1: Per-Class mAP@50 Bar Chart */}
+                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                              <BarChart3 className="w-4 h-4 text-emerald-500" />
+                              Độ đo mAP@0.50 theo từng loài sâu bệnh
+                            </h6>
+                            <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              Mean mAP: 89.8%
+                            </span>
                           </div>
 
-                          {/* Progress bar */}
-                          <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${Math.max(5, item.avgConf)}%`,
-                                backgroundColor: item.color,
-                              }}
-                            />
+                          <div className="h-60 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={PER_CLASS_BENCHMARKS} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                                <XAxis
+                                  dataKey="name"
+                                  angle={-35}
+                                  textAnchor="end"
+                                  interval={0}
+                                  tick={{ fontSize: 10, fill: '#64748b' }}
+                                />
+                                <YAxis domain={[75, 100]} unit="%" tick={{ fontSize: 11, fill: '#64748b' }} />
+                                <Tooltip
+                                  formatter={(val: any) => [`${val}%`, 'mAP@0.50']}
+                                  labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                                  contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                                />
+                                <ReferenceLine y={89.8} stroke="#10b981" strokeDasharray="3 3" />
+                                <Bar dataKey="map50" radius={[6, 6, 0, 0]}>
+                                  {PER_CLASS_BENCHMARKS.map((entry, idx) => (
+                                    <Cell key={idx} fill={entry.color} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
-                      ))}
+
+                        {/* Chart 2: Precision-Recall Curve (PR-Curve) */}
+                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                              <TrendingUp className="w-4 h-4 text-purple-500" />
+                              Đường cong Precision - Recall (PR Curve)
+                            </h6>
+                            <span className="font-mono text-xs font-bold text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                              AUC: 0.898
+                            </span>
+                          </div>
+
+                          <div className="h-60 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={PR_CURVE_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                                <defs>
+                                  <linearGradient id="prGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                                <XAxis dataKey="recall" domain={[0, 1]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" R" />
+                                <YAxis domain={[0.4, 1.0]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" P" />
+                                <Tooltip
+                                  formatter={(val: any, name: any) => [
+                                    typeof val === 'number' ? (val * 100).toFixed(1) + '%' : val,
+                                    name === 'precision' ? 'Độ chính xác (Precision)' : name
+                                  ]}
+                                  labelFormatter={(label) => `Độ phủ (Recall): ${(Number(label) * 100).toFixed(0)}%`}
+                                  contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                                />
+                                <ReferenceLine x={0.88} stroke="#8b5cf6" strokeDasharray="3 3" label={{ value: 'Peak F1: 0.88', fill: '#8b5cf6', fontSize: 10 }} />
+                                <Area
+                                  type="monotone"
+                                  dataKey="precision"
+                                  stroke="#10b981"
+                                  strokeWidth={2.5}
+                                  fillOpacity={1}
+                                  fill="url(#prGradient)"
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-view 2: F1 vs Confidence Curve */}
+                    {curveSubTab === 'f1_conf' && (
+                      <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                              <TrendingUp className="w-4 h-4 text-emerald-500" />
+                              Đường cong F1-Score theo Ngưỡng tin cậy (Confidence Threshold)
+                            </h6>
+                            <p className="text-xs text-slate-500">
+                              Giải thích lý do hệ thống chọn mặc định Conf ≥ 0.55 làm điểm vận hành tối ưu (Operating Sweet Spot)
+                            </p>
+                          </div>
+                          <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                            F1 Max = 0.88 tại Conf = 0.55
+                          </span>
+                        </div>
+
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={F1_CONFIDENCE_CURVE} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                              <defs>
+                                <linearGradient id="f1Gradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                              <XAxis dataKey="conf" tick={{ fontSize: 11, fill: '#64748b' }} unit=" Conf" />
+                              <YAxis domain={[0.5, 1.0]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" F1" />
+                              <Tooltip
+                                formatter={(val: any, name: any) => [
+                                  typeof val === 'number' ? val.toFixed(2) : val,
+                                  name === 'f1' ? 'F1-Score' : name === 'precision' ? 'Precision' : 'Recall'
+                                ]}
+                                labelFormatter={(label) => `Ngưỡng lọc Conf: ${label}`}
+                                contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                              />
+                              <ReferenceLine x={0.55} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Tối ưu Conf: 0.55', fill: '#10b981', fontSize: 11 }} />
+                              <Area
+                                type="monotone"
+                                dataKey="f1"
+                                stroke="#3b82f6"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#f1Gradient)"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-view 3: Architecture & Model Specs */}
+                    {curveSubTab === 'specs' && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Kiến trúc nơ-ron</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm block">{MODEL_SPECS.architecture}</span>
+                          <span className="text-xs text-slate-400">Ultralytics PyTorch</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Số lượng tham số</span>
+                          <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-base block">{MODEL_SPECS.parameters}</span>
+                          <span className="text-xs text-slate-400">Tối ưu cho Edge GPU</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Độ phức tạp GFLOPs</span>
+                          <span className="font-bold font-mono text-blue-600 dark:text-blue-400 text-base block">{MODEL_SPECS.gflops}</span>
+                          <span className="text-xs text-slate-400">Xử lý thời gian thực</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Độ phân giải đầu vào</span>
+                          <span className="font-bold font-mono text-purple-600 dark:text-purple-400 text-base block">{MODEL_SPECS.inputSize}</span>
+                          <span className="text-xs text-slate-400">Tự động scale thư viện</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">mAP@0.50 Toàn cục</span>
+                          <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-base block">{MODEL_SPECS.mAP50_Overall}</span>
+                          <span className="text-xs text-slate-400">Trung bình 10 loài</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">mAP@0.50:0.95 (COCO)</span>
+                          <span className="font-bold font-mono text-indigo-600 dark:text-indigo-400 text-base block">{MODEL_SPECS.mAP50_95_Overall}</span>
+                          <span className="text-xs text-slate-400">Tiêu chuẩn khắt khe</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Độ chính xác (Precision)</span>
+                          <span className="font-bold font-mono text-teal-600 dark:text-teal-400 text-base block">{MODEL_SPECS.precision_Overall}</span>
+                          <span className="text-xs text-slate-400">Hạn chế báo động giả</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Độ phủ (Recall)</span>
+                          <span className="font-bold font-mono text-amber-600 dark:text-amber-400 text-base block">{MODEL_SPECS.recall_Overall}</span>
+                          <span className="text-xs text-slate-400">Không bỏ sót dịch hại</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Explanatory footer */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2 font-mono">
+                      <span>Kiến trúc nơ-ron: <strong>Ultralytics YOLO11s</strong></span>
+                      <span>Tập kiểm thử: <strong>1.520 mẫu ảnh lá lúa thực địa</strong></span>
+                      <span>Mức tin cậy tối ưu: <strong>Conf ≥ 0.55 (F1-score = 0.88)</strong></span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                    Không ghi nhận đối tượng sâu hại nào vượt ngưỡng tin cậy trên mẫu ảnh này.
                   </div>
                 )}
               </div>
