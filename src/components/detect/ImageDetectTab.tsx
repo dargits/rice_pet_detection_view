@@ -11,6 +11,7 @@ import { evaluatePestRisk, findPestEntry } from '../../lib/pestTranslations';
 import { Detection, PredictResponse } from '../../types';
 import { ClassBadge } from '../ui/Badge';
 import { SpeciesModal } from '../ui/SpeciesModal';
+import { getClassColor } from '../../lib/colors';
 import {
   UploadCloud,
   ImageIcon,
@@ -47,6 +48,7 @@ import {
   Cpu,
   Activity,
   Gauge,
+  BarChart3,
 } from 'lucide-react';
 
 interface ImageItem {
@@ -203,6 +205,65 @@ export const ImageDetectTab: React.FC = () => {
       counts[d.cls] = (counts[d.cls] || 0) + 1;
     });
     return counts;
+  }, [effectiveDetections]);
+
+  // Real metrics calculated from current image's effective detections
+  const meanConfidence = useMemo(() => {
+    if (effectiveDetections.length === 0) return 0;
+    const sum = effectiveDetections.reduce((acc, d) => acc + d.conf, 0);
+    return (sum / effectiveDetections.length) * 100;
+  }, [effectiveDetections]);
+
+  const maxConfidence = useMemo(() => {
+    if (effectiveDetections.length === 0) return 0;
+    return Math.max(...effectiveDetections.map((d) => d.conf)) * 100;
+  }, [effectiveDetections]);
+
+  const surfaceCoveragePercent = useMemo(() => {
+    if (effectiveDetections.length === 0) return 0;
+    const imgW = currentItem?.naturalWidth || currentItem?.result?.image_width || 640;
+    const imgH = currentItem?.naturalHeight || currentItem?.result?.image_height || 640;
+    const totalImgArea = imgW * imgH;
+    if (totalImgArea <= 0) return 0;
+
+    const totalBoxArea = effectiveDetections.reduce((acc, d) => {
+      const [x1, y1, x2, y2] = d.box;
+      const w = Math.max(0, x2 - x1);
+      const h = Math.max(0, y2 - y1);
+      return acc + (w * h);
+    }, 0);
+
+    const percent = (totalBoxArea / totalImgArea) * 100;
+    return Math.min(100, Math.max(0.1, percent));
+  }, [effectiveDetections, currentItem?.naturalWidth, currentItem?.naturalHeight, currentItem?.result]);
+
+  const speciesChartData = useMemo(() => {
+    const map: Record<string, { clsId: number | string; count: number; sumConf: number; maxConf: number }> = {};
+    effectiveDetections.forEach((d) => {
+      if (!map[d.cls]) {
+        map[d.cls] = { clsId: d.cls_id ?? d.cls, count: 0, sumConf: 0, maxConf: 0 };
+      }
+      map[d.cls].count += 1;
+      map[d.cls].sumConf += d.conf;
+      if (d.conf > map[d.cls].maxConf) {
+        map[d.cls].maxConf = d.conf;
+      }
+    });
+
+    return Object.entries(map).map(([name, data]) => {
+      const entry = findPestEntry(data.clsId);
+      const viName = entry ? entry.vi : name;
+      const avgConf = (data.sumConf / data.count) * 100;
+      const color = getClassColor(data.clsId).stroke;
+      return {
+        name: viName,
+        rawName: name,
+        count: data.count,
+        avgConf: Math.round(avgConf * 10) / 10,
+        maxConf: Math.round(data.maxConf * 1000) / 10,
+        color,
+      };
+    });
   }, [effectiveDetections]);
 
   // Outbreak risk assessment dynamically based on effective counts
@@ -466,31 +527,31 @@ export const ImageDetectTab: React.FC = () => {
 
         {/* Quick Demo Samples Bar */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-1">
-          <span className="font-semibold flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span className="font-semibold flex items-center gap-1.5 text-xs sm:text-sm">
+            <Sparkles className="w-4 h-4 text-amber-500" />
             Thử nhanh với mẫu ruộng thực địa:
           </span>
           <button
             onClick={() => loadDemoSample('brown_hopper')}
-            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-xs sm:text-sm"
           >
             🌾 Mẫu Rầy nâu
           </button>
           <button
             onClick={() => loadDemoSample('leaf_roller')}
-            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-xs sm:text-sm"
           >
             🍃 Mẫu Sâu cuốn lá
           </button>
           <button
             onClick={() => loadDemoSample('stem_borer')}
-            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-xs sm:text-sm"
           >
             🌾 Mẫu Sâu đục thân
           </button>
           <button
             onClick={() => loadDemoSample('gall_midge')}
-            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-[11px]"
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-xs sm:text-sm"
           >
             🌿 Mẫu Muỗi hành
           </button>
@@ -576,7 +637,7 @@ export const ImageDetectTab: React.FC = () => {
                 } bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm overflow-hidden flex flex-col space-y-3 transition-all duration-300`}
             >
               {/* Interactive Toolbar on Canvas */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 py-0.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 py-1 text-xs sm:text-sm">
                 {/* Left: Zoom & Fullscreen Controls */}
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
@@ -585,9 +646,9 @@ export const ImageDetectTab: React.FC = () => {
                       className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                       title="Thu nhỏ ảnh"
                     >
-                      <ZoomOut className="w-3.5 h-3.5" />
+                      <ZoomOut className="w-4 h-4" />
                     </button>
-                    <span className="px-1.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="px-2 font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {Math.round(zoomLevel * 100)}%
                     </span>
                     <button
@@ -595,27 +656,27 @@ export const ImageDetectTab: React.FC = () => {
                       className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                       title="Phóng to ảnh"
                     >
-                      <ZoomIn className="w-3.5 h-3.5" />
+                      <ZoomIn className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setZoomLevel(1)}
                       className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors ml-0.5"
                       title="Đặt lại kích thước chuẩn"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
+                      <RotateCcw className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Expand / Minimize Full-width toggle */}
                   <button
                     onClick={() => setIsExpandedView(!isExpandedView)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${isExpandedView
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors ${isExpandedView
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                       }`}
                     title={isExpandedView ? 'Thu gọn hiển thị 2 cột' : 'Mở rộng khung ảnh tối đa (dễ soi côn trùng nhỏ)'}
                   >
-                    {isExpandedView ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    {isExpandedView ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     <span className="hidden sm:inline">{isExpandedView ? 'Thu gọn' : 'Phóng lớn'}</span>
                   </button>
                 </div>
@@ -627,8 +688,8 @@ export const ImageDetectTab: React.FC = () => {
                     className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60"
                     title="Ngưỡng tin cậy (Conf) - Thay đổi tại đây sẽ áp dụng đồng bộ cho toàn bộ hệ thống (Ảnh, Video, Camera)"
                   >
-                    <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    <Sliders className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       Ngưỡng: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{config.defaultConf.toFixed(2)}</span>
                     </span>
                     <input
@@ -638,25 +699,25 @@ export const ImageDetectTab: React.FC = () => {
                       step="0.05"
                       value={config.defaultConf}
                       onChange={(e) => updateConfig({ defaultConf: parseFloat(e.target.value) })}
-                      className="w-16 sm:w-24 accent-emerald-600 cursor-pointer h-1.5"
+                      className="w-16 sm:w-24 accent-emerald-600 cursor-pointer h-2"
                     />
                   </div>
 
                   {/* Display Toggles */}
                   <button
                     onClick={() => setShowLabels(!showLabels)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${showLabels
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors ${showLabels
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                       }`}
                   >
-                    {showLabels ? <Eye className="w-3 h-3 text-emerald-500" /> : <EyeOff className="w-3 h-3 text-slate-400" />}
+                    {showLabels ? <Eye className="w-3.5 h-3.5 text-emerald-500" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
                     <span>Nhãn tên</span>
                   </button>
 
                   <button
                     onClick={() => setShowConfidence(!showConfidence)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${showConfidence
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors ${showConfidence
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                       }`}
@@ -666,12 +727,12 @@ export const ImageDetectTab: React.FC = () => {
 
                   {/* Filter by Species */}
                   {detectedSpeciesList.length > 1 && (
-                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                      <Filter className="w-3 h-3 text-slate-400" />
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                      <Filter className="w-3.5 h-3.5 text-slate-400" />
                       <select
                         value={filterClass}
                         onChange={(e) => setFilterClass(e.target.value)}
-                        className="bg-transparent text-[11px] font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                        className="bg-transparent text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
                       >
                         <option value="all">Tất cả loài ({detectedSpeciesList.length})</option>
                         {detectedSpeciesList.map((cls) => (
@@ -687,13 +748,13 @@ export const ImageDetectTab: React.FC = () => {
                   {currentItem.result && (
                     <button
                       onClick={() => setIsComparingSplit(!isComparingSplit)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-colors ${isComparingSplit
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors ${isComparingSplit
                           ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                         }`}
                       title="So sánh ảnh gốc và kết quả AI"
                     >
-                      <SplitSquareVertical className="w-3 h-3" />
+                      <SplitSquareVertical className="w-3.5 h-3.5" />
                       <span>So sánh</span>
                     </button>
                   )}
@@ -806,151 +867,185 @@ export const ImageDetectTab: React.FC = () => {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={handleDownloadStandard}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs sm:text-sm transition-colors"
                       title="Tải ảnh đã vẽ khung nhận diện"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                       Tải ảnh nhận diện
                     </button>
                     <button
                       onClick={handleDownloadExecutiveReport}
-                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm shadow-emerald-600/20 transition-all"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm shadow-sm shadow-emerald-600/20 transition-all"
                       title="Xuất phiếu giám định dịch hại nông nghiệp"
                     >
-                      <FileCheck className="w-3.5 h-3.5" />
+                      <FileCheck className="w-4 h-4" />
                       Xuất báo cáo giám định
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Model Telemetry & Benchmarks Card */}
-              <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 sm:p-3.5 shadow-sm space-y-2.5">
+              {/* Real Image Telemetry & Species Distribution Chart */}
+              <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
                 {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                      <Cpu className="w-4 h-4" />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <BarChart3 className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                        Thông số suy luận & Độ đo mô hình YOLO11s
+                      <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        Chỉ số phân tích & Biểu đồ thực tế của ảnh
                       </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Chỉ số kiểm định thực nghiệm trên tập dữ liệu sâu hại lúa & cấu hình phần cứng
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Đo lường trực tiếp từ mô hình YOLO11s trên mẫu lá lúa đang hiển thị
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">
-                      PyTorch CUDA (FP16)
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/20">
-                      NVIDIA T4 GPU
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    {currentItem.naturalWidth && currentItem.naturalHeight && (
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
+                        {currentItem.naturalWidth} × {currentItem.naturalHeight} px
+                      </span>
+                    )}
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">
+                      Conf lọc: ≥ {config.defaultConf.toFixed(2)}
                     </span>
                   </div>
                 </div>
 
-                {/* Benchmark Metrics Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      mAP@0.50
+                {/* 4 KPI Metrics Grid - Clear, readable, real data */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Metric 1: Total detected pests */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      Số cá thể phát hiện
                     </span>
-                    <span className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                      89.4%
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        {effectiveDetections.length}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">đối tượng</span>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                      {Object.keys(effectiveCounts).length} loài dịch hại
                     </span>
-                    <span className="text-[9px] text-slate-400 block">Độ chuẩn 10 loài</span>
                   </div>
 
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      mAP@0.5:0.95
+                  {/* Metric 2: Mean confidence */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      Độ tin cậy trung bình
                     </span>
-                    <span className="text-base font-bold font-mono text-blue-600 dark:text-blue-400">
-                      68.2%
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl sm:text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+                        {meanConfidence > 0 ? `${meanConfidence.toFixed(1)}%` : '0%'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                      {effectiveDetections.length > 0 ? `Cao nhất: ${maxConfidence.toFixed(1)}%` : 'Không có đối tượng'}
                     </span>
-                    <span className="text-[9px] text-slate-400 block">Chuẩn COCO test</span>
                   </div>
 
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      Precision (P)
+                  {/* Metric 3: Inference latency & FPS */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      Thời gian suy luận
                     </span>
-                    <span className="text-base font-bold font-mono text-purple-600 dark:text-purple-400">
-                      92.1%
-                    </span>
-                    <span className="text-[9px] text-slate-400 block">Bắt đúng, ít báo ảo</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      Recall (R)
-                    </span>
-                    <span className="text-base font-bold font-mono text-amber-600 dark:text-amber-400">
-                      87.8%
-                    </span>
-                    <span className="text-[9px] text-slate-400 block">Độ phủ không sót</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      F1-Score
-                    </span>
-                    <span className="text-base font-bold font-mono text-teal-600 dark:text-teal-400">
-                      0.90
-                    </span>
-                    <span className="text-[9px] text-slate-400 block">Điểm điều hòa</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
-                      Tốc độ xử lý
-                    </span>
-                    <span className="text-base font-bold font-mono text-rose-600 dark:text-rose-400">
-                      {currentItem.result?.ms ? `${currentItem.result.ms} ms` : 'Chờ quét'}
-                    </span>
-                    <span className="text-[9px] text-slate-400 block">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl sm:text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                        {currentItem.result?.ms ? `${currentItem.result.ms} ms` : 'Chờ quét'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
                       {currentItem.result?.ms
-                        ? `~${(1000 / currentItem.result.ms).toFixed(1)} FPS`
+                        ? `Tương đương ~${(1000 / currentItem.result.ms).toFixed(1)} FPS`
                         : 'GPU CUDA ready'}
                     </span>
                   </div>
-                </div>
 
-                {/* Operational Pipeline Specs */}
-                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] gap-2">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600 dark:text-slate-400">
-                    <span>
-                      Kích thước đầu vào:{' '}
-                      <strong className="text-slate-800 dark:text-slate-200 font-mono">640×640 px</strong>
+                  {/* Metric 4: Surface coverage */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      Mật độ che phủ lá
                     </span>
-                    <span>
-                      Giải thuật NMS:{' '}
-                      <strong className="text-slate-800 dark:text-slate-200 font-mono">IoU = 0.45</strong>
-                    </span>
-                    <span>
-                      Ngưỡng lọc Conf:{' '}
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-mono">
-                        ≥ {config.defaultConf.toFixed(2)}
-                      </strong>
-                    </span>
-                    {effectiveDetections.length > 0 && (
-                      <span>
-                        Độ tin cậy TB mẫu này:{' '}
-                        <strong className="text-blue-600 dark:text-blue-400 font-mono">
-                          {((effectiveDetections.reduce((s, d) => s + d.conf, 0) / effectiveDetections.length) * 100).toFixed(1)}%
-                        </strong>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+                        {surfaceCoveragePercent > 0 ? `${surfaceCoveragePercent.toFixed(1)}%` : '0%'}
                       </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 shrink-0">
-                    <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
-                    <span>Sẵn sàng phân tích theo thời gian thực</span>
+                      <span className="text-xs text-slate-500 font-medium">diện tích</span>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                      {surfaceCoveragePercent >= 5 ? 'Nguy cơ lây lan cao' : surfaceCoveragePercent > 0 ? 'Xâm nhiễm cục bộ' : 'Bề mặt an toàn'}
+                    </span>
                   </div>
                 </div>
+
+                {/* Species Confidence Distribution Chart & Breakdown */}
+                {speciesChartData.length > 0 ? (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Activity className="w-4 h-4 text-emerald-500" />
+                        Biểu đồ phân bố độ tin cậy theo loài trong mẫu ảnh:
+                      </span>
+                      <span className="text-xs text-slate-500 font-mono">
+                        {speciesChartData.length} loài được phát hiện
+                      </span>
+                    </div>
+
+                    {/* Horizontal Visual Progress Bars */}
+                    <div className="space-y-2">
+                      {speciesChartData.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between text-xs sm:text-sm">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="font-bold text-slate-800 dark:text-slate-200">
+                                {item.name}
+                              </span>
+                              <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-600">
+                                {item.count} cá thể
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 font-mono">
+                              <span className="text-xs text-slate-500">Độ tin cậy TB:</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                {item.avgConf}%
+                              </span>
+                              <span className="text-xs text-slate-400 hidden sm:inline">
+                                (Cao nhất: {item.maxConf}%)
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.max(5, item.avgConf)}%`,
+                                backgroundColor: item.color,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Không ghi nhận đối tượng sâu hại nào vượt ngưỡng tin cậy trên mẫu ảnh này.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1158,25 +1253,25 @@ export const ImageDetectTab: React.FC = () => {
 
                         {/* Inline Agricultural Diagnostic & CLRRI IPM Decision Card - Collapsible */}
                         {activeInspectedEntry && (
-                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 animate-in fade-in">
-                            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 via-slate-50 to-teal-500/5 dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900 border border-emerald-500/25 shadow-sm space-y-2">
-                              <div className="flex items-start justify-between gap-2 border-b border-emerald-500/20 pb-1.5">
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5 animate-in fade-in">
+                            <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/10 via-slate-50 to-teal-500/5 dark:from-emerald-950/30 dark:via-slate-900/60 dark:to-slate-900 border border-emerald-500/25 shadow-sm space-y-2.5">
+                              <div className="flex items-start justify-between gap-2 border-b border-emerald-500/20 pb-2">
                                 <div>
-                                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                                     Chẩn đoán loài đang chọn:
                                   </span>
-                                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
-                                    <Bug className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
+                                    <Bug className="w-4 h-4 text-emerald-600 shrink-0" />
                                     {activeInspectedEntry.vi}
                                   </h4>
-                                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
                                     {activeInspectedEntry.en} ‹ {activeInspectedEntry.scientific} ›
                                   </p>
                                 </div>
 
                                 <span
-                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
+                                  className={`text-xs font-bold px-2.5 py-1 rounded-full border shrink-0 ${
                                     activeInspectedEntry.severity === 'critical'
                                       ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
                                       : activeInspectedEntry.severity === 'high'
@@ -1196,27 +1291,27 @@ export const ImageDetectTab: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setShowInspectedDetails(!showInspectedDetails)}
-                                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-semibold transition-colors"
+                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-semibold transition-colors"
                               >
                                 <span>{showInspectedDetails ? 'Thu gọn chi tiết' : 'Xem chi tiết phòng trừ & thiên địch'}</span>
-                                {showInspectedDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {showInspectedDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                               </button>
 
                               {/* Expanded Detailed Sections */}
                               {showInspectedDetails && (
-                                <div className="space-y-2 pt-1 border-t border-emerald-500/15 animate-in fade-in duration-150">
+                                <div className="space-y-2.5 pt-1 border-t border-emerald-500/15 animate-in fade-in duration-150">
                                   {/* Sensitive Stages */}
                                   {activeInspectedEntry.damageStages && activeInspectedEntry.damageStages.length > 0 && (
                                     <div className="space-y-1">
-                                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                        <Leaf className="w-3 h-3 text-emerald-500" />
+                                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Leaf className="w-3.5 h-3.5 text-emerald-500" />
                                         Giai đoạn mẫn cảm:
                                       </span>
-                                      <div className="flex flex-wrap gap-1">
+                                      <div className="flex flex-wrap gap-1.5">
                                         {activeInspectedEntry.damageStages.map((st, i) => (
                                           <span
                                             key={i}
-                                            className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-[10px]"
+                                            className="px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-500/20 text-xs"
                                           >
                                             {st}
                                           </span>
@@ -1226,51 +1321,49 @@ export const ImageDetectTab: React.FC = () => {
                                   )}
 
                                   {/* Symptoms */}
-                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
-                                    <strong className="text-slate-800 dark:text-slate-200">Triệu chứng:</strong>{' '}
+                                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                                    <strong className="text-slate-900 dark:text-slate-100">Triệu chứng:</strong>{' '}
                                     {activeInspectedEntry.symptoms}
                                   </p>
 
                                   {/* Natural Enemies */}
-                                  <div className="space-y-0.5">
-                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
-                                      <HeartHandshake className="w-3 h-3" />
+                                  <div className="space-y-1">
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+                                      <HeartHandshake className="w-3.5 h-3.5" />
                                       Thiên địch tự nhiên:
                                     </span>
-                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 italic">
+                                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 italic">
                                       {activeInspectedEntry.naturalEnemies.join(', ')}
                                     </p>
                                   </div>
 
                                   {/* Recommended Chemicals */}
-                                  <div className="space-y-1">
-                                    <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                                      <FlaskConical className="w-3 h-3" />
+                                  <div className="space-y-1.5">
+                                    <span className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                                      <FlaskConical className="w-3.5 h-3.5" />
                                       Hoạt chất đặc trị & thuốc thương phẩm:
                                     </span>
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="flex flex-wrap gap-1.5">
                                       {activeInspectedEntry.chemicals.map((ch, idx) => (
                                         <span
                                           key={idx}
-                                          className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 text-[10px]"
+                                          className="px-2.5 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 text-xs"
                                         >
                                           {ch}
                                         </span>
                                       ))}
                                     </div>
                                   </div>
-
-
                                 </div>
                               )}
 
                               {/* Button to open full modal */}
                               <button
                                 onClick={() => setSelectedPestForModal(activeInspectedEntry.key)}
-                                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shadow-emerald-600/20 active:scale-95 inline-flex items-center justify-center gap-1"
+                                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-sm shadow-emerald-600/20 active:scale-95 inline-flex items-center justify-center gap-1.5"
                               >
                                 <span>Xem đầy đủ bách khoa IPM</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
+                                <ChevronRight className="w-4 h-4" />
                               </button>
                             </div>
                           </div>

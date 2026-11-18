@@ -25,7 +25,7 @@ export const ClassBadge: React.FC<ClassBadgeProps> = ({
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border transition-all ${
         color.bg
       } ${onClick ? 'cursor-pointer hover:opacity-80 active:scale-95' : 'cursor-default'} ${className}`}
     >
