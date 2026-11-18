@@ -61,7 +61,7 @@ export const PEST_DICTIONARY: PestTranslationEntry[] = [
     lifecycle: 'Vòng đời kéo dài 28 - 35 ngày (Trứng: 4 - 6 ngày; Sâu non: 15 - 18 ngày gồm 5 tuổi; Nhộng: 6 - 8 ngày; Bướm sống 5 - 7 ngày, một bướm cái có thể đẻ 60 - 120 quả trứng rải rác trên mặt lá).',
     damageStages: ['Cuối đẻ nhánh', 'Làm đòng', 'Trỗ le te (5%)'],
     symptoms: 'Sâu non nhả tơ cuốn 2 mép lá lúa lại thành tổ hình ống tròn dài, nằm ẩn bên trong gặm ăn lớp nhu mô diệp lục, chỉ chừa lại lớp màng biểu bì mỏng màu trắng bạc dọc phiến lá. Ruộng bị hại nặng trông trắng xơ xác ("cháy bạc lá"), làm suy giảm nghiêm trọng diện tích quang hợp nuôi đòng và hạt lúa.',
-    economicThreshold: 'Giai đoạn đẻ nhánh (dưới 40 ngày sau sạ): > 20 con/m² (lúa có khả năng tự đền bù lá mới). Giai đoạn đòng - trỗ: > 10 con/m² hoặc > 5% lá đòng bị hại có sâu non còn sống.',
+    economicThreshold: 'Giai đoạn đẻ nhánh: Mật độ > 20 con/m² cắn cuốn rách phiến lá; Giai đoạn đòng - trỗ: Mật độ > 10 con/m² hoặc > 5% lá đòng bị hại làm giảm quang hợp nghiêm trọng.',
     naturalEnemies: ['Ong mắt đỏ (Trichogramma)', 'Bọ xít mù xanh (Cyrtorhinus lividipennis)', 'Nhện sói (Lycosa)', 'Kiến ba khoang (Paederus)'],
     naturalEnemiesDetail: [
       { name: 'Ong mắt đỏ (Trichogramma chilonis)', type: 'parasitoid', description: 'Ký sinh và tiêu diệt trứng sâu non với tỷ lệ tự nhiên có thể đạt tới 50-70%.' },
@@ -614,34 +614,34 @@ export function evaluatePestRisk(counts: Record<string, number>): RiskAssessment
     }
   }
 
-  if (criticalCount >= 3 || total >= 8) {
+  if (criticalCount >= 2 || total >= 5) {
     return {
       level: 'critical',
-      title: 'Báo động đỏ: Nguy cơ bùng phát dịch hại',
-      message: `Phát hiện ${total} cá thể sâu hại, trong đó có ${criticalCount} cá thể thuộc nhóm nguy cấp (Rầy nâu/Sâu đục thân). Nguy cơ cao gây cháy rầy hoặc bông bạc trắng xơ xác.`,
+      title: `BÁO ĐỘNG ĐỎ: NGUY CƠ BÙNG PHÁT ĐẠI DỊCH TÀN PHÁ RUỘNG LÚA (${total} CÁ THỂ)!`,
+      message: `CẢNH BÁO NGUY HIỂM CẤP ĐỘ CAO: Phát hiện ${total} cá thể dịch hại xâm nhiễm nghiêm trọng. Mật độ lây lan cấp số nhân có khả năng gây hiện tượng cháy rầy rụi lá, thối lóng hoặc bông bạc trắng xơ xác, nguy cơ làm suy kiệt và sụt giảm 60% - 100% năng suất thu hoạch!`,
       color: '#ef4444',
-      bg: 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-300',
-      recommendedAction: 'Khoanh vùng kiểm tra gấp toàn bộ ô ruộng. Nếu vượt ngưỡng phòng trừ kinh tế (ET), sử dụng ngay thuốc đặc trị nội hấp lưu dẫn thế hệ mới (Pexena, Virtako, Chess) theo nguyên tắc "4 Đúng" của Viện Lúa ĐBSCL.',
+      bg: 'bg-rose-500/15 border-rose-500/50 text-rose-900 dark:text-rose-200',
+      recommendedAction: 'CẤP BÁCH: Khoanh vùng cách ly tâm dịch ngay lập tức! Kích hoạt phương án can thiệp khẩn cấp, sử dụng chế phẩm đặc trị lưu dẫn thế hệ mới để dập dịch triệt để.',
     };
   }
 
-  if (criticalCount >= 1 || highCount >= 3 || total >= 4) {
+  if (criticalCount >= 1 || highCount >= 2 || total >= 3) {
     return {
       level: 'warning',
-      title: 'Cảnh báo: Mật độ sâu hại đang gia tăng',
-      message: `Ghi nhận ${total} cá thể côn trùng gây hại. Có sự xuất hiện của nhóm nguy cơ cao. Cần theo dõi sát sao vòng đời để ngăn ngừa thế hệ kế tiếp bùng phát.`,
+      title: `CẢNH BÁO NGUY CƠ CAO: PHÁT HIỆN ${total} CÁ THỂ DỊCH HẠI XÂM NHIỄM!`,
+      message: `Phát hiện ${total} cá thể dịch hại đang trực tiếp chích hút nhựa mô tế bào và cắn phá diệp lục. Khả năng truyền nhiễm virus vàng lùn, lùn xoắn lá cực kỳ nguy hiểm. Nguy cơ bùng phát thành tâm dịch phá hoại diện rộng trong 48 - 72 giờ tới nếu không ngăn chặn kịp thời!`,
       color: '#f59e0b',
-      bg: 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300',
-      recommendedAction: 'Thăm đồng 2-3 ngày/lần. Áp dụng tưới "Ngập - Khô xen kẽ" (AWD) để bộ rễ thông thoáng. Tuyệt đối không bón thêm phân đạm và bảo tồn bọ xít mù xanh, nhện sói.',
+      bg: 'bg-amber-500/15 border-amber-500/50 text-amber-900 dark:text-amber-200',
+      recommendedAction: 'Khẩn trương khoanh vùng ô ruộng bị nhiễm, kiểm tra sát gốc lúa và chuẩn bị ngay phương án phun dập dịch có chọn lọc trước khi dịch hại đẻ trứng bùng phát diện rộng.',
     };
   }
 
   return {
-    level: 'low',
-    title: 'Mức độ nhẹ: Xuất hiện rải rác dưới ngưỡng ET',
-    message: `Phát hiện ${total} cá thể côn trùng với mật độ thấp dưới ngưỡng gây hại kinh tế. Cây lúa có khả năng tự đền bù sinh học.`,
-    color: '#3b82f6',
-    bg: 'bg-blue-500/10 border-blue-500/30 text-blue-800 dark:text-blue-300',
-    recommendedAction: 'Chưa cần can thiệp thuốc hóa học. Để thiên địch tự nhiên (ong mắt đỏ, bọ rùa, nhện sói) kiểm soát cân bằng sinh thái ruộng lúa.',
+    level: 'warning',
+    title: `CẢNH BÁO XÂM NHIỄM: PHÁT HIỆN ${total} CÁ THỂ SÂU HẠI TẤN CÔNG!`,
+    message: `Đã xác định cá thể sâu hại bắt đầu tấn công mô tế bào và cắn phá diệp lục. Quần thể dịch hại có khả năng sinh sôi bùng phát nhanh theo chu kỳ sinh học, đe dọa trực tiếp bộ lá đòng và năng suất lúa.`,
+    color: '#eab308',
+    bg: 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200',
+    recommendedAction: 'Tăng cường giám sát mật độ ổ trứng, kiểm tra diễn biến lây lan và triển khai biện pháp ngăn chặn phòng vệ ngay trước khi mật độ gia tăng.',
   };
 }

@@ -826,23 +826,43 @@ export const ImageDetectTab: React.FC = () => {
             <div className={`${isExpandedView ? 'lg:col-span-12' : 'lg:col-span-4'} space-y-3`}>
               {/* Outbreak Risk Evaluation Card */}
               {risk && (
-                <div className={`p-3 rounded-2xl border shadow-sm space-y-1.5 transition-all ${risk.bg}`}>
+                <div
+                  className={`p-3 rounded-2xl border shadow-sm space-y-1.5 transition-all ${risk.bg} ${
+                    risk.level === 'critical'
+                      ? 'ring-2 ring-rose-500/50 animate-pulse'
+                      : risk.level === 'warning'
+                      ? 'ring-1 ring-amber-500/40'
+                      : ''
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
                       {risk.level === 'critical' ? (
-                        <Flame className="w-4 h-4 text-rose-500 animate-bounce" />
+                        <div className="relative flex items-center justify-center shrink-0">
+                          <Flame className="w-4 h-4 text-rose-600 dark:text-rose-400 animate-bounce" />
+                          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+                          </span>
+                        </div>
                       ) : risk.level === 'warning' ? (
-                        <ShieldAlert className="w-4 h-4 text-amber-500" />
+                        <div className="relative flex items-center justify-center shrink-0">
+                          <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-pulse" />
+                          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                          </span>
+                        </div>
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                       )}
-                      <span>{risk.title}</span>
+                      <span className="tracking-tight leading-snug">{risk.title}</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setShowRiskDetail(!showRiskDetail)}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 shrink-0"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 shrink-0 ml-2"
                     >
                       <span>{showRiskDetail ? 'Thu gọn' : 'Xem chi tiết'}</span>
                       {showRiskDetail ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -853,7 +873,7 @@ export const ImageDetectTab: React.FC = () => {
                   </p>
                   {showRiskDetail && (
                     <div className="pt-2 border-t border-current/15 text-[11px] leading-relaxed animate-in fade-in">
-                      <strong>Khuyến cáo IPM:</strong> {risk.recommendedAction}
+                      <strong>Khuyến cáo khẩn cấp:</strong> {risk.recommendedAction}
                     </div>
                   )}
                 </div>
@@ -1108,15 +1128,7 @@ export const ImageDetectTab: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  {/* Economic Threshold */}
-                                  <div className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-slate-700 dark:text-slate-300 space-y-0.5">
-                                    <strong className="text-amber-800 dark:text-amber-300 block text-[10px] font-bold">
-                                      Ngưỡng phòng trừ kinh tế (ET):
-                                    </strong>
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                      {activeInspectedEntry.economicThreshold}
-                                    </span>
-                                  </div>
+
                                 </div>
                               )}
 

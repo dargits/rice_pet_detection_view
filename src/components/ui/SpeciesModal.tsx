@@ -339,14 +339,14 @@ export const SpeciesModal: React.FC<SpeciesModalProps> = ({ pestName, onClose })
         {/* Tab 4: CLRRI IPM Standard Protocol */}
         {activeTab === 'ipm' && (
           <div className="space-y-4 animate-in fade-in duration-150 text-xs sm:text-sm">
-            {/* Economic Threshold Card */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 space-y-1.5">
-              <h4 className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Ngưỡng phòng trừ kinh tế (ET) chuẩn Viện Lúa ĐBSCL:
+            {/* Outbreak Damage & Yield Loss Warning Card */}
+            <div className="p-4 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 space-y-1.5">
+              <h4 className="font-bold text-rose-900 dark:text-rose-300 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                Mức độ tàn phá & Cảnh báo thiệt hại mùa màng:
               </h4>
               <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
-                {pest?.clrriIpm?.economicThreshold || pest?.economicThreshold || 'Đang cập nhật ngưỡng ET.'}
+                {pest?.clrriIpm?.economicThreshold || pest?.economicThreshold || 'Đang cập nhật dữ liệu cảnh báo.'}
               </p>
             </div>
 

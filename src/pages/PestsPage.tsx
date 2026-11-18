@@ -437,11 +437,11 @@ export const PestsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Economic Threshold (ET) Highlight */}
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-0.5">
-                      <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                    {/* Damage & Outbreak Risk Highlight */}
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 space-y-0.5">
+                      <span className="text-[10px] font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1">
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        Ngưỡng kinh tế (ET) Viện Lúa:
+                        Cảnh báo mức độ tàn phá & Nguy cơ thất thu:
                       </span>
                       <p className="text-[11px] text-slate-800 dark:text-slate-200 font-semibold leading-relaxed">
                         {pest.economicThreshold}
