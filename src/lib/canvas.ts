@@ -93,8 +93,8 @@ export function drawDetections({
     // Box stroke
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = isHighlighted || isHovered
-      ? Math.max(3, Math.min(5, Math.round(displayWidth / 220)))
-      : Math.max(2, Math.min(3.5, Math.round(displayWidth / 320)));
+      ? Math.max(4, Math.min(6, Math.round(displayWidth / 160)))
+      : Math.max(3, Math.min(4.5, Math.round(displayWidth / 220)));
     ctx.strokeRect(sx1, sy1, sw, sh);
 
     // Corner Accents for high-tech look
@@ -125,12 +125,12 @@ export function drawDetections({
       const name = getLabel ? getLabel(det) : det.cls;
       const label = showConfidence ? `${name} ${confPercent}%` : name;
 
-      const fontSize = Math.max(10, Math.min(14, Math.round(displayWidth / 48)));
-      ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+      const fontSize = Math.max(13, Math.min(18, Math.round(displayWidth / 36)));
+      ctx.font = `bold ${fontSize}px Inter, sans-serif`;
 
       const textMetrics = ctx.measureText(label);
-      const paddingX = 7;
-      const paddingY = 4;
+      const paddingX = 8;
+      const paddingY = 5;
       const tagWidth = textMetrics.width + paddingX * 2;
       const tagHeight = fontSize + paddingY * 2;
 
@@ -146,8 +146,13 @@ export function drawDetections({
       // Background tag with rounded corners
       ctx.fillStyle = color.stroke;
       ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(tagX, tagY, tagWidth, tagHeight, 4) : ctx.fillRect(tagX, tagY, tagWidth, tagHeight);
+      ctx.roundRect ? ctx.roundRect(tagX, tagY, tagWidth, tagHeight, 5) : ctx.fillRect(tagX, tagY, tagWidth, tagHeight);
       ctx.fill();
+
+      // High contrast thin border around the tag so it pops on projector
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
       // Label text
       ctx.fillStyle = '#ffffff';

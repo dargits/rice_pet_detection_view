@@ -1017,63 +1017,63 @@ export const ImageDetectTab: React.FC = () => {
                     </div>
 
                     {/* 4 KPI Metrics Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-emerald-500/40 transition-colors">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-500 transition-all">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block">
                           Số cá thể phát hiện
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
                             {effectiveDetections.length}
                           </span>
-                          <span className="text-xs text-slate-500 font-medium">đối tượng</span>
+                          <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">đối tượng</span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold block mt-0.5">
                           {Object.keys(effectiveCounts).length} loài dịch hại
                         </span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-blue-500/40 transition-colors">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-500 transition-all">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block">
                           Độ tin cậy trung bình
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl sm:text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-2xl sm:text-3xl font-black font-mono text-blue-600 dark:text-blue-400">
                             {meanConfidence > 0 ? `${meanConfidence.toFixed(1)}%` : '0%'}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold block mt-0.5">
                           {effectiveDetections.length > 0 ? `Cao nhất: ${maxConfidence.toFixed(1)}%` : 'Không có đối tượng'}
                         </span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-purple-500/40 transition-colors">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-purple-500 transition-all">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block">
                           Thời gian suy luận
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl sm:text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-2xl sm:text-3xl font-black font-mono text-purple-600 dark:text-purple-400">
                             {currentItem.result?.ms ? `${currentItem.result.ms} ms` : 'Chờ quét'}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold block mt-0.5">
                           {currentItem.result?.ms
                             ? `Tương đương ~${(1000 / currentItem.result.ms).toFixed(1)} FPS`
                             : 'GPU CUDA ready'}
                         </span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1 hover:border-amber-500/40 transition-colors">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-amber-500 transition-all">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block">
                           Mật độ che phủ lá
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-2xl sm:text-3xl font-black font-mono text-amber-600 dark:text-amber-400">
                             {surfaceCoveragePercent > 0 ? `${surfaceCoveragePercent.toFixed(1)}%` : '0%'}
                           </span>
-                          <span className="text-xs text-slate-500 font-medium">diện tích</span>
+                          <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold">diện tích</span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-semibold block mt-0.5">
                           {surfaceCoveragePercent >= 5 ? 'Nguy cơ lây lan cao' : surfaceCoveragePercent > 0 ? 'Xâm nhiễm cục bộ' : 'Bề mặt an toàn'}
                         </span>
                       </div>
@@ -1081,53 +1081,53 @@ export const ImageDetectTab: React.FC = () => {
 
                     {/* Species Confidence Distribution Chart & Breakdown */}
                     {speciesChartData.length > 0 ? (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                             <Activity className="w-4 h-4 text-emerald-500" />
                             Biểu đồ phân bố độ tin cậy theo loài trong mẫu ảnh:
                           </span>
-                          <span className="text-xs text-slate-500 font-mono">
+                          <span className="text-xs text-slate-600 dark:text-slate-400 font-bold font-mono">
                             {speciesChartData.length} loài được phát hiện
                           </span>
                         </div>
 
                         {/* Horizontal Visual Progress Bars */}
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           {speciesChartData.map((item, idx) => (
                             <div
                               key={idx}
-                              className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5 hover:shadow-sm transition-all"
+                              className="p-3.5 rounded-xl bg-white dark:bg-slate-800/70 border-2 border-slate-200 dark:border-slate-700 space-y-2 hover:shadow-md transition-all"
                             >
-                              <div className="flex items-center justify-between text-xs sm:text-sm">
-                                <div className="flex items-center gap-2">
+                              <div className="flex items-center justify-between text-sm sm:text-base">
+                                <div className="flex items-center gap-2.5">
                                   <span
-                                    className="w-3 h-3 rounded-full shrink-0"
+                                    className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
                                     style={{ backgroundColor: item.color }}
                                   />
-                                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                                  <span className="font-extrabold text-slate-900 dark:text-slate-100">
                                     {item.name}
                                   </span>
-                                  <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-600">
+                                  <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold border border-slate-300 dark:border-slate-600">
                                     {item.count} cá thể
                                   </span>
                                 </div>
 
                                 <div className="flex items-center gap-2 font-mono">
-                                  <span className="text-xs text-slate-500">Độ tin cậy TB:</span>
-                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                  <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold">Độ tin cậy TB:</span>
+                                  <span className="font-black text-emerald-700 dark:text-emerald-400 text-base sm:text-lg">
                                     {item.avgConf}%
                                   </span>
-                                  <span className="text-xs text-slate-400 hidden sm:inline">
+                                  <span className="text-xs text-slate-500 hidden sm:inline font-medium">
                                     (Cao nhất: {item.maxConf}%)
                                   </span>
                                 </div>
                               </div>
 
-                              {/* Progress bar */}
-                              <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
+                              {/* Progress bar with smooth entrance */}
+                              <div className="w-full bg-slate-200/90 dark:bg-slate-700 rounded-full h-3 sm:h-3.5 overflow-hidden border border-slate-300/40">
                                 <div
-                                  className="h-full rounded-full transition-all duration-1000 ease-out"
+                                  className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
                                   style={{
                                     width: isTelemetryVisible ? `${Math.max(5, item.avgConf)}%` : '0%',
                                     backgroundColor: item.color,
@@ -1171,15 +1171,15 @@ export const ImageDetectTab: React.FC = () => {
                     <div className="overflow-x-auto pb-2 scrollbar-thin">
                       <div className="min-w-[620px]">
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-300 text-center pb-1">
-                          <div className="col-span-1 text-left font-semibold text-slate-400 truncate">
-                            True \ Pred
+                        <div className="grid grid-cols-12 gap-1 text-xs font-black text-slate-800 dark:text-slate-200 text-center pb-1.5">
+                          <div className="col-span-1 text-left font-bold text-slate-500 dark:text-slate-400 truncate">
+                            Thực \ Đoán
                           </div>
                           {MATRIX_CLASSES.map((cls, idx) => (
                             <div
                               key={idx}
-                              className="col-span-1 p-1 rounded-md bg-slate-100 dark:bg-slate-800/80 truncate"
-                              title={cls}
+                              className="col-span-1 p-1 rounded-md bg-slate-200/80 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold truncate shadow-xs"
+                              title={`${idx + 1}. ${cls}`}
                             >
                               {idx + 1}
                             </div>
@@ -1187,15 +1187,15 @@ export const ImageDetectTab: React.FC = () => {
                         </div>
 
                         {/* Matrix Rows */}
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {NORMALIZED_CONFUSION_MATRIX.map((row, rIdx) => (
-                            <div key={rIdx} className="grid grid-cols-12 gap-1 items-center">
+                            <div key={rIdx} className="grid grid-cols-12 gap-1.5 items-center">
                               {/* Row Header Label */}
                               <div
-                                className="col-span-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate text-left pr-1"
+                                className="col-span-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate text-left pr-1"
                                 title={`${rIdx + 1}. ${MATRIX_CLASSES[rIdx]}`}
                               >
-                                <span className="font-mono text-slate-400 mr-1">{rIdx + 1}.</span>
+                                <span className="font-mono text-emerald-700 dark:text-emerald-400 mr-1">{rIdx + 1}.</span>
                                 {MATRIX_CLASSES[rIdx].replace('Sâu ', '').replace('Rầy ', '')}
                               </div>
 
@@ -1210,20 +1210,20 @@ export const ImageDetectTab: React.FC = () => {
                                     key={cIdx}
                                     onMouseEnter={() => setHoveredMatrixCell({ row: rIdx, col: cIdx, val })}
                                     onMouseLeave={() => setHoveredMatrixCell(null)}
-                                    className={`col-span-1 py-1.5 rounded-lg text-center font-mono text-[10px] sm:text-[11px] transition-all cursor-pointer select-none ${
+                                    className={`col-span-1 py-2 rounded-lg text-center font-mono text-xs sm:text-sm transition-all cursor-pointer select-none ${
                                       isHovered
-                                        ? 'ring-2 ring-blue-500 scale-110 z-10 shadow-md font-bold'
+                                        ? 'ring-3 ring-blue-600 scale-110 z-20 shadow-lg font-black'
                                         : ''
                                     } ${
                                       val >= 0.9
-                                        ? 'bg-emerald-600 text-white font-bold'
+                                        ? 'bg-emerald-600 text-white font-black shadow-sm'
                                         : val >= 0.7
-                                        ? 'bg-emerald-500 text-white font-semibold'
+                                        ? 'bg-emerald-500 text-white font-extrabold'
                                         : val >= 0.2
-                                        ? 'bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100'
+                                        ? 'bg-emerald-100 text-emerald-950 font-black border border-emerald-400'
                                         : val > 0.02
-                                        ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold'
-                                        : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600'
+                                        ? 'bg-amber-100 text-amber-950 font-black border border-amber-400'
+                                        : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 font-semibold'
                                     }`}
                                     title={`Thực tế: ${MATRIX_CLASSES[rIdx]} | Dự đoán: ${MATRIX_CLASSES[cIdx]} | Tỉ lệ: ${(val * 100).toFixed(1)}%`}
                                   >
@@ -1366,21 +1366,21 @@ export const ImageDetectTab: React.FC = () => {
                           <div className="h-60 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={PER_CLASS_BENCHMARKS} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
                                 <XAxis
                                   dataKey="name"
                                   angle={-35}
                                   textAnchor="end"
                                   interval={0}
-                                  tick={{ fontSize: 10, fill: '#64748b' }}
+                                  tick={{ fontSize: 11, fill: '#0f172a', fontWeight: 'bold' }}
                                 />
-                                <YAxis domain={[75, 100]} unit="%" tick={{ fontSize: 11, fill: '#64748b' }} />
+                                <YAxis domain={[75, 100]} unit="%" tick={{ fontSize: 11.5, fill: '#0f172a', fontWeight: 'bold' }} />
                                 <Tooltip
                                   formatter={(val: any) => [`${val}%`, 'mAP@0.50']}
                                   labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                                  contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                                  contentStyle={{ borderRadius: '12px', fontSize: '13px', fontWeight: 'bold' }}
                                 />
-                                <ReferenceLine y={89.8} stroke="#10b981" strokeDasharray="3 3" />
+                                <ReferenceLine y={89.8} stroke="#059669" strokeWidth={2} strokeDasharray="3 3" />
                                 <Bar dataKey="map50" radius={[6, 6, 0, 0]}>
                                   {PER_CLASS_BENCHMARKS.map((entry, idx) => (
                                     <Cell key={idx} fill={entry.color} />
@@ -1392,13 +1392,13 @@ export const ImageDetectTab: React.FC = () => {
                         </div>
 
                         {/* Chart 2: Precision-Recall Curve (PR-Curve) */}
-                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 space-y-2 shadow-sm">
                           <div className="flex items-center justify-between">
                             <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                               <TrendingUp className="w-4 h-4 text-purple-500" />
                               Đường cong Precision - Recall (PR Curve)
                             </h6>
-                            <span className="font-mono text-xs font-bold text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                            <span className="font-mono text-xs font-bold text-purple-600 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">
                               AUC: 0.898
                             </span>
                           </div>
@@ -1408,27 +1408,27 @@ export const ImageDetectTab: React.FC = () => {
                               <AreaChart data={PR_CURVE_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                                 <defs>
                                   <linearGradient id="prGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.45} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                                <XAxis dataKey="recall" domain={[0, 1]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" R" />
-                                <YAxis domain={[0.4, 1.0]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" P" />
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                                <XAxis dataKey="recall" domain={[0, 1]} tick={{ fontSize: 11.5, fill: '#0f172a', fontWeight: 'bold' }} unit=" R" />
+                                <YAxis domain={[0.4, 1.0]} tick={{ fontSize: 11.5, fill: '#0f172a', fontWeight: 'bold' }} unit=" P" />
                                 <Tooltip
                                   formatter={(val: any, name: any) => [
                                     typeof val === 'number' ? (val * 100).toFixed(1) + '%' : val,
                                     name === 'precision' ? 'Độ chính xác (Precision)' : name
                                   ]}
                                   labelFormatter={(label) => `Độ phủ (Recall): ${(Number(label) * 100).toFixed(0)}%`}
-                                  contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                                  contentStyle={{ borderRadius: '12px', fontSize: '13px', fontWeight: 'bold' }}
                                 />
-                                <ReferenceLine x={0.88} stroke="#8b5cf6" strokeDasharray="3 3" label={{ value: 'Peak F1: 0.88', fill: '#8b5cf6', fontSize: 10 }} />
+                                <ReferenceLine x={0.88} stroke="#7c3aed" strokeWidth={2} strokeDasharray="3 3" label={{ value: 'Peak F1: 0.88', fill: '#6d28d9', fontSize: 11, fontWeight: 'bold' }} />
                                 <Area
                                   type="monotone"
                                   dataKey="precision"
-                                  stroke="#10b981"
-                                  strokeWidth={2.5}
+                                  stroke="#059669"
+                                  strokeWidth={3}
                                   fillOpacity={1}
                                   fill="url(#prGradient)"
                                 />
@@ -1441,14 +1441,14 @@ export const ImageDetectTab: React.FC = () => {
 
                     {/* Sub-view 2: F1 vs Confidence Curve */}
                     {curveSubTab === 'f1_conf' && (
-                      <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                      <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 space-y-3 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                               <TrendingUp className="w-4 h-4 text-emerald-500" />
                               Đường cong F1-Score theo Ngưỡng tin cậy (Confidence Threshold)
                             </h6>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
                               Giải thích lý do hệ thống chọn mặc định Conf ≥ 0.55 làm điểm vận hành tối ưu (Operating Sweet Spot)
                             </p>
                           </div>
@@ -1462,27 +1462,27 @@ export const ImageDetectTab: React.FC = () => {
                             <AreaChart data={F1_CONFIDENCE_CURVE} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                               <defs>
                                 <linearGradient id="f1Gradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.45} />
+                                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0.05} />
                                 </linearGradient>
                               </defs>
-                              <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                              <XAxis dataKey="conf" tick={{ fontSize: 11, fill: '#64748b' }} unit=" Conf" />
-                              <YAxis domain={[0.5, 1.0]} tick={{ fontSize: 11, fill: '#64748b' }} unit=" F1" />
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                              <XAxis dataKey="conf" tick={{ fontSize: 11.5, fill: '#0f172a', fontWeight: 'bold' }} unit=" Conf" />
+                              <YAxis domain={[0.5, 1.0]} tick={{ fontSize: 11.5, fill: '#0f172a', fontWeight: 'bold' }} unit=" F1" />
                               <Tooltip
                                 formatter={(val: any, name: any) => [
                                   typeof val === 'number' ? val.toFixed(2) : val,
                                   name === 'f1' ? 'F1-Score' : name === 'precision' ? 'Precision' : 'Recall'
                                 ]}
                                 labelFormatter={(label) => `Ngưỡng lọc Conf: ${label}`}
-                                contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                                contentStyle={{ borderRadius: '12px', fontSize: '13px', fontWeight: 'bold' }}
                               />
-                              <ReferenceLine x={0.55} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Tối ưu Conf: 0.55', fill: '#10b981', fontSize: 11 }} />
+                              <ReferenceLine x={0.55} stroke="#059669" strokeWidth={2} strokeDasharray="3 3" label={{ value: 'Tối ưu Conf: 0.55', fill: '#047857', fontSize: 11.5, fontWeight: 'bold' }} />
                               <Area
                                 type="monotone"
                                 dataKey="f1"
-                                stroke="#3b82f6"
-                                strokeWidth={2.5}
+                                stroke="#2563eb"
+                                strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#f1Gradient)"
                               />

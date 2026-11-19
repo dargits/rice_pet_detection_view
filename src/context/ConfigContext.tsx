@@ -20,6 +20,8 @@ interface ConfigContextValue {
   removeToast: (id: string) => void;
   theme: 'light' | 'dark' | 'system';
   setTheme: (t: 'light' | 'dark' | 'system') => void;
+  isProjectorMode: boolean;
+  toggleProjectorMode: () => void;
   pestLanguage: PestLanguageOption;
   setPestLanguage: (lang: PestLanguageOption) => void;
   getPestName: (raw: string | number) => string;
@@ -37,9 +39,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Theme support
+  // Theme support - defaults to 'light' for high brightness and presentation clarity
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(() => {
-    return (localStorage.getItem('rice_theme') as 'light' | 'dark' | 'system') || 'system';
+    return (localStorage.getItem('rice_theme') as 'light' | 'dark' | 'system') || 'light';
+  });
+
+  // Projector presentation mode (Chế độ Trình chiếu Máy chiếu: Siêu sáng, tương phản cao, phóng to chữ)
+  const [isProjectorMode, setIsProjectorMode] = useState<boolean>(() => {
+    return localStorage.getItem('rice_projector_mode') === 'true';
   });
 
   // Update configuration
@@ -66,19 +73,6 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const checkCountRef = useRef(0);
 
-  // Apply dark class to <html> based on theme
-  useEffect(() => {
-    localStorage.setItem('rice_theme', theme);
-    const root = document.documentElement;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (theme === 'dark' || (theme === 'system' && systemPrefersDark)) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
-
   // Toast functions
   const addToast = useCallback((type: ToastType, title: string, message?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -91,6 +85,41 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // Toggle Projector Presentation Mode
+  const toggleProjectorMode = useCallback(() => {
+    setIsProjectorMode((prev) => {
+      const next = !prev;
+      localStorage.setItem('rice_projector_mode', String(next));
+      if (next) {
+        setThemeState('light');
+        addToast('success', 'Đã bật Chế độ Máy chiếu', 'Giao diện siêu sáng, tương phản cao và cỡ chữ lớn tối ưu cho màn hình chiếu.');
+      } else {
+        addToast('info', 'Đã tắt Chế độ Máy chiếu', 'Đã quay lại giao diện hiển thị tiêu chuẩn.');
+      }
+      return next;
+    });
+  }, [addToast]);
+
+  // Apply classes to <html> based on theme & projector mode
+  useEffect(() => {
+    localStorage.setItem('rice_theme', theme);
+    const root = document.documentElement;
+
+    if (isProjectorMode) {
+      root.classList.add('projector-mode');
+      root.classList.remove('dark');
+      return;
+    }
+
+    root.classList.remove('projector-mode');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (theme === 'dark' || (theme === 'system' && systemPrefersDark)) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme, isProjectorMode]);
 
   // Health check worker
   const checkHealth = useCallback(async (): Promise<HealthResponse | null> => {
@@ -154,6 +183,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     removeToast,
     theme,
     setTheme: setThemeState,
+    isProjectorMode,
+    toggleProjectorMode,
     pestLanguage,
     setPestLanguage,
     getPestName,

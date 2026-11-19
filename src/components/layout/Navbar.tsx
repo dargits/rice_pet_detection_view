@@ -18,10 +18,22 @@ import {
   WifiOff,
   Sprout,
   Languages,
+  Tv,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { status, deviceInfo, config, openSettings, theme, setTheme, pestLanguage, setPestLanguage } = useConfig();
+  const {
+    status,
+    deviceInfo,
+    config,
+    openSettings,
+    theme,
+    setTheme,
+    isProjectorMode,
+    toggleProjectorMode,
+    pestLanguage,
+    setPestLanguage,
+  } = useConfig();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cyclePestLanguage = () => {
@@ -183,6 +195,28 @@ export const Navbar: React.FC = () => {
             </span>
           </button>
 
+          {/* Projector Presentation Mode Button */}
+          <button
+            onClick={toggleProjectorMode}
+            aria-label="Bật/Tắt chế độ máy chiếu"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+              isProjectorMode
+                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-md shadow-amber-500/30 scale-105'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+            }`}
+            title={
+              isProjectorMode
+                ? 'Đang bật Chế độ Máy chiếu (Nhấp để tắt)'
+                : 'Bật Chế độ Máy chiếu: Siêu sáng, tương phản cao, phóng to chữ'
+            }
+          >
+            <Tv className={`w-3.5 h-3.5 ${isProjectorMode ? 'text-slate-950 stroke-[2.5]' : 'text-amber-500'}`} />
+            <span className="hidden sm:inline">Máy chiếu</span>
+            {isProjectorMode && (
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping hidden sm:inline-block" />
+            )}
+          </button>
+
           {/* Theme switcher */}
           <button
             onClick={cycleTheme}
@@ -237,6 +271,28 @@ export const Navbar: React.FC = () => {
               </NavLink>
             );
           })}
+
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => {
+                toggleProjectorMode();
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                isProjectorMode
+                  ? 'bg-amber-500 text-slate-950 font-black'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <Tv className="w-4 h-4 text-amber-500" />
+                <span>Chế độ Trình chiếu Máy chiếu</span>
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-white/40 dark:bg-black/20">
+                {isProjectorMode ? 'ĐANG BẬT' : 'BẬT'}
+              </span>
+            </button>
+          </div>
         </div>
       )}
     </header>

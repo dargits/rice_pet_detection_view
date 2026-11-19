@@ -4,14 +4,78 @@
 
 @layer base {
   html {
-    font-size: 15.5px;
+    font-size: 16px;
   }
   body {
     @apply bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen antialiased transition-colors duration-200 selection:bg-emerald-500 selection:text-white;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 }
 
+/* ==========================================================================
+   Projector Presentation Mode (Chế độ Trình chiếu Máy chiếu)
+   Tối ưu hóa độ sáng, tương phản cao và cỡ chữ to để nhìn rõ từ xa
+   ========================================================================== */
+.projector-mode {
+  font-size: 17.5px !important;
+}
+
+.projector-mode body {
+  background-color: #f1f5f9 !important; /* Nền sáng dịu, rõ nét */
+  color: #0f172a !important; /* Chữ đen đậm rõ nét */
+  font-weight: 500 !important;
+}
+
+/* Biến các card thành màu trắng tinh khiết với viền đậm tương phản */
+.projector-mode .bg-white,
+.projector-mode [class*="bg-white/"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Tăng độ đậm của các đường viền phân cách để không bị mờ nhạt trên máy chiếu */
+.projector-mode [class*="border-slate-100"],
+.projector-mode [class*="border-slate-200"],
+.projector-mode [class*="border-slate-300"] {
+  border-color: #cbd5e1 !important;
+}
+
+/* Chống mờ chữ: Chuyển các màu xám mờ sang màu đậm tương phản cao */
+.projector-mode .text-slate-400,
+.projector-mode .text-slate-500 {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+.projector-mode .text-slate-600 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.projector-mode .text-slate-700,
+.projector-mode .text-slate-800,
+.projector-mode .text-slate-900 {
+  color: #020617 !important;
+  font-weight: 700 !important;
+}
+
+/* Tăng kích thước số đo và font đơn cách (monospace) */
+.projector-mode .font-mono {
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Tăng độ dày các thanh tiến trình phân bố để nhìn từ xa rõ ràng */
+.projector-mode .h-2,
+.projector-mode .h-2.5 {
+  height: 12px !important;
+}
+
+/* ==========================================================================
+   Smooth Animations
+   ========================================================================== */
 @keyframes fadeInUp {
   from {
     opacity: 0;
