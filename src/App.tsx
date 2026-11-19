@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ConfigProvider } from './context/ConfigContext';
-import { Navbar } from './components/layout/Navbar';
+import { Sidebar } from './components/layout/Sidebar';
 import { HealthAlertBanner } from './components/layout/HealthAlertBanner';
 import { ConnectionModal } from './components/layout/ConnectionModal';
 import { Footer } from './components/layout/Footer';
@@ -18,7 +18,7 @@ function PageLoader() {
   return (
     <div className="py-24 flex flex-col items-center justify-center text-slate-500">
       <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mb-2" />
-      <p className="text-xs font-medium">Đang tải trang...</p>
+      <p className="text-sm font-medium">Đang tải trang...</p>
     </div>
   );
 }
@@ -40,54 +40,59 @@ function AppContent() {
   const isKnownRoute = isDetect || isPests || isHistory || isStats;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
-      <Navbar />
-      <HealthAlertBanner />
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
+      {/* Vertical Navigation Sidebar on the Left */}
+      <Sidebar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Keep-Alive Route Panels: Preserves uploaded files, detections, canvas, and searches */}
-        {visited.has('/') && (
-          <div className={isDetect ? 'block' : 'hidden'}>
+      {/* Main Content Workspace on the Right */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <HealthAlertBanner />
+
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
+          {/* Keep-Alive Route Panels: Preserves uploaded files, detections, canvas, and searches */}
+          {visited.has('/') && (
+            <div className={isDetect ? 'block' : 'hidden'}>
+              <Suspense fallback={<PageLoader />}>
+                <DetectPage />
+              </Suspense>
+            </div>
+          )}
+
+          {visited.has('/pests') && (
+            <div className={isPests ? 'block' : 'hidden'}>
+              <Suspense fallback={<PageLoader />}>
+                <PestsPage />
+              </Suspense>
+            </div>
+          )}
+
+          {visited.has('/history') && (
+            <div className={isHistory ? 'block' : 'hidden'}>
+              <Suspense fallback={<PageLoader />}>
+                <HistoryPage />
+              </Suspense>
+            </div>
+          )}
+
+          {visited.has('/stats') && (
+            <div className={isStats ? 'block' : 'hidden'}>
+              <Suspense fallback={<PageLoader />}>
+                <StatsPage />
+              </Suspense>
+            </div>
+          )}
+
+          {!isKnownRoute && (
             <Suspense fallback={<PageLoader />}>
-              <DetectPage />
+              <Routes>
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
             </Suspense>
-          </div>
-        )}
+          )}
+        </main>
 
-        {visited.has('/pests') && (
-          <div className={isPests ? 'block' : 'hidden'}>
-            <Suspense fallback={<PageLoader />}>
-              <PestsPage />
-            </Suspense>
-          </div>
-        )}
-
-        {visited.has('/history') && (
-          <div className={isHistory ? 'block' : 'hidden'}>
-            <Suspense fallback={<PageLoader />}>
-              <HistoryPage />
-            </Suspense>
-          </div>
-        )}
-
-        {visited.has('/stats') && (
-          <div className={isStats ? 'block' : 'hidden'}>
-            <Suspense fallback={<PageLoader />}>
-              <StatsPage />
-            </Suspense>
-          </div>
-        )}
-
-        {!isKnownRoute && (
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Suspense>
-        )}
-      </main>
-
-      <Footer />
+        <Footer />
+      </div>
 
       {/* Persistent Dialogs and Alerts */}
       <ConnectionModal />
