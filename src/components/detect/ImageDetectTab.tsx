@@ -37,6 +37,7 @@ import {
 } from 'recharts';
 import {
   UploadCloud,
+  Plus,
   ImageIcon,
   Download,
   Clock,
@@ -109,6 +110,7 @@ export const ImageDetectTab: React.FC = () => {
   const [showDetectionsList, setShowDetectionsList] = useState<boolean>(false);
   const [showRiskDetail, setShowRiskDetail] = useState<boolean>(false);
   const [showInspectedDetails, setShowInspectedDetails] = useState<boolean>(false);
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
   const [analyticsTab, setAnalyticsTab] = useState<'sample' | 'matrix' | 'curves'>('sample');
   const [curveSubTab, setCurveSubTab] = useState<'map_pr' | 'f1_conf' | 'specs'>('map_pr');
   const [hoveredMatrixCell, setHoveredMatrixCell] = useState<{ row: number; col: number; val: number } | null>(null);
@@ -534,8 +536,9 @@ export const ImageDetectTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Upload Zone & Quick Samples */}
-      <div className="space-y-3">
+      {/* Upload Zone & Quick Samples - Only shown when empty */}
+      {images.length === 0 && (
+      <div className="space-y-4 py-2">
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -600,12 +603,13 @@ export const ImageDetectTab: React.FC = () => {
           </button>
           <button
             onClick={() => loadDemoSample('gall_midge')}
-            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-colors font-medium text-xs sm:text-sm"
+            className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors font-medium text-sm shadow-xs"
           >
             🌿 Mẫu Muỗi hành
           </button>
         </div>
       </div>
+      )}
 
       {/* Main Workspace when images are loaded */}
       {images.length > 0 && currentItem && (
@@ -613,6 +617,24 @@ export const ImageDetectTab: React.FC = () => {
           {/* Thumbnails strip & Batch Action */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              {/* Add more images button */}
+              <button
+                type="button"
+                onClick={() => document.getElementById('image-file-input-more')?.click()}
+                className="w-14 h-14 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600 flex flex-col items-center justify-center text-slate-400 transition-colors shrink-0"
+                title="Thêm ảnh khác vào danh sách"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="text-[10px] font-bold mt-0.5">Thêm ảnh</span>
+              </button>
+              <input
+                id="image-file-input-more"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
               {images.map((item, idx) => (
                 <div
                   key={item.id}
@@ -934,9 +956,34 @@ export const ImageDetectTab: React.FC = () => {
                 )}
               </div>
 
-              {/* Real Image Telemetry, Confusion Matrix & Model Curves Dashboard */}
-              <div
-                ref={telemetryRef}
+              {/* Optional Collapsible Technical Analytics & Benchmarks */}
+              <div className="w-full pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAnalytics(!showAnalytics);
+                    setIsTelemetryVisible(true);
+                  }}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-slate-800 dark:text-slate-100 font-bold text-sm sm:text-base transition-all shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BarChart3 className="w-5 h-5 text-emerald-600" />
+                    <span>Đánh giá chuyên sâu & Ma trận nhầm lẫn (Tùy chọn)</span>
+                    <span className="hidden sm:inline text-xs font-normal text-slate-500 dark:text-slate-400">
+                      {showAnalytics ? '• Bấm để thu gọn' : '• Xem chi tiết độ đo mAP, PR & Confusion Matrix'}
+                    </span>
+                  </div>
+                  {showAnalytics ? (
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  )}
+                </button>
+
+                {showAnalytics && (
+                  <div className="mt-3 space-y-4 animate-in fade-in duration-200">
+                    <div
+                      ref={telemetryRef}
                 className={`w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4 transition-all duration-700 transform ${
                   isTelemetryVisible
                     ? 'opacity-100 translate-y-0 scale-100 shadow-slate-200/50 dark:shadow-none'
@@ -1546,6 +1593,9 @@ export const ImageDetectTab: React.FC = () => {
                     </div>
                   </div>
                 )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1556,9 +1606,9 @@ export const ImageDetectTab: React.FC = () => {
                 <div
                   className={`p-3 rounded-2xl border shadow-sm space-y-1.5 transition-all ${risk.bg} ${
                     risk.level === 'critical'
-                      ? 'ring-2 ring-rose-500/50 animate-pulse'
+                      ? ''
                       : risk.level === 'warning'
-                      ? 'ring-1 ring-amber-500/40'
+                      ? ''
                       : ''
                   }`}
                 >
@@ -1566,7 +1616,7 @@ export const ImageDetectTab: React.FC = () => {
                     <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
                       {risk.level === 'critical' ? (
                         <div className="relative flex items-center justify-center shrink-0">
-                          <Flame className="w-4 h-4 text-rose-600 dark:text-rose-400 animate-bounce" />
+                          <Flame className="w-4 h-4 text-rose-600 dark:text-rose-400 " />
                           <span className="absolute -top-1 -right-1 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
