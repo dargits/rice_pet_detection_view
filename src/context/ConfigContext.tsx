@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { AppConfig, HealthResponse, ToastMessage, ToastType, PestLanguageOption } from '../types';
-import { getSavedConfig, saveConfig, fetchHealth, normalizeUrl } from '../lib/api';
+import { getSavedConfig, saveConfig, fetchHealth } from '../lib/api';
 import { getPestDisplayName } from '../lib/pestTranslations';
+import {
+  autoDiscoverOnlineBackend,
+  AutoDiscoverResult,
+  getLatestBackendUrl,
+} from '../config/backendConfig';
 
 interface ConfigContextValue {
   config: AppConfig;
@@ -15,6 +20,8 @@ interface ConfigContextValue {
   openSettings: () => void;
   closeSettings: () => void;
   checkHealth: () => Promise<HealthResponse | null>;
+  isAutoDiscovering: boolean;
+  runAutoDiscover: () => Promise<AutoDiscoverResult>;
   toasts: ToastMessage[];
   addToast: (type: ToastType, title: string, message?: string) => void;
   removeToast: (id: string) => void;
@@ -37,6 +44,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [uptime, setUptime] = useState<number>(0);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isAutoDiscovering, setIsAutoDiscovering] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Theme support - defaults to 'light' for high brightness and presentation clarity
@@ -72,6 +80,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const checkCountRef = useRef(0);
+  const consecutiveFailuresRef = useRef(0);
+  const isAutoConnectingRef = useRef(false);
 
   // Toast functions
   const addToast = useCallback((type: ToastType, title: string, message?: string) => {
@@ -138,6 +148,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setClasses(health.classes || {});
       setUptime(health.uptime_s || 0);
       setLastChecked(new Date());
+      consecutiveFailuresRef.current = 0;
       return health;
     } catch {
       setStatus('offline');
@@ -147,24 +158,104 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  // Initial setup: auto open settings if no API URL and not in mock mode
+  // Auto discovery of online backend across Cloud sync, backend-config.json & candidates
+  const runAutoDiscover = useCallback(async (): Promise<AutoDiscoverResult> => {
+    if (isAutoConnectingRef.current) {
+      return { found: false, url: '', source: 'none' };
+    }
+    isAutoConnectingRef.current = true;
+    setIsAutoDiscovering(true);
+
+    try {
+      const res = await autoDiscoverOnlineBackend();
+      if (res.found && res.url) {
+        updateConfig({ apiUrl: res.url });
+        const newCfg = { ...getSavedConfig(), apiUrl: res.url };
+        try {
+          const health = await fetchHealth(newCfg);
+          setStatus('online');
+          setDeviceInfo(health.device || 'CPU');
+          setClasses(health.classes || {});
+          setUptime(health.uptime_s || 0);
+          setLastChecked(new Date());
+          setIsSettingsOpen(false);
+
+          const sourceLabels: Record<string, string> = {
+            cloud: 'Cloud Đồng bộ nhóm',
+            config: 'File backend-config.json',
+            recent: 'Lịch sử trước đây',
+            query: 'Đường dẫn chia sẻ',
+            fallback: 'Cấu hình dự phòng',
+            local: 'Cục bộ máy',
+          };
+          const sourceText = sourceLabels[res.source] || 'hệ thống';
+
+          addToast(
+            'success',
+            'Đã tự động kết nối Backend!',
+            `Đã kết nối máy chủ ONLINE từ ${sourceText}: ${res.url}`
+          );
+        } catch {
+          // Ignore
+        }
+      }
+      return res;
+    } finally {
+      setIsAutoDiscovering(false);
+      isAutoConnectingRef.current = false;
+    }
+  }, [updateConfig, addToast]);
+
+  // Initial startup connection check and auto-failover
   useEffect(() => {
     const isMock = new URLSearchParams(window.location.search).get('mock') === '1';
-    if (!config.apiUrl && !config.mockMode && !isMock) {
-      setIsSettingsOpen(true);
-    }
-    checkHealth();
-  }, [checkHealth, config.apiUrl, config.mockMode]);
 
-  // Recurring 10-second health check
+    const initConnection = async () => {
+      const initialHealth = await checkHealth();
+      if (!initialHealth && !config.mockMode && !isMock) {
+        // Current saved link is dead or empty -> immediately auto-discover from Cloud & config!
+        const disc = await runAutoDiscover();
+        if (!disc.found && !getLatestBackendUrl()) {
+          setIsSettingsOpen(true);
+        }
+      }
+    };
+
+    initConnection();
+  }, [checkHealth, config.mockMode, runAutoDiscover]);
+
+  // Listen for backend URL change events from other tabs or components
   useEffect(() => {
-    const interval = setInterval(() => {
+    const handleUrlChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string }>;
+      if (customEvent.detail?.url && customEvent.detail.url !== config.apiUrl) {
+        setConfigState((prev) => ({ ...prev, apiUrl: customEvent.detail.url }));
+        checkHealth();
+      }
+    };
+
+    window.addEventListener('rice_pest_backend_url_change', handleUrlChange);
+    return () => window.removeEventListener('rice_pest_backend_url_change', handleUrlChange);
+  }, [config.apiUrl, checkHealth]);
+
+  // Recurring 10-second health check with auto-failover if disconnected
+  useEffect(() => {
+    const interval = setInterval(async () => {
       checkCountRef.current += 1;
-      checkHealth();
+      const res = await checkHealth();
+      if (!res && !config.mockMode) {
+        consecutiveFailuresRef.current += 1;
+        // If offline for 2 consecutive intervals (20s), attempt auto-discovery
+        if (consecutiveFailuresRef.current === 2) {
+          runAutoDiscover();
+        }
+      } else {
+        consecutiveFailuresRef.current = 0;
+      }
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [checkHealth]);
+  }, [checkHealth, config.mockMode, runAutoDiscover]);
 
   const value: ConfigContextValue = {
     config,
@@ -178,6 +269,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     openSettings: () => setIsSettingsOpen(true),
     closeSettings: () => setIsSettingsOpen(false),
     checkHealth,
+    isAutoDiscovering,
+    runAutoDiscover,
     toasts,
     addToast,
     removeToast,
@@ -200,4 +293,3 @@ export function useConfig() {
   }
   return context;
 }
-

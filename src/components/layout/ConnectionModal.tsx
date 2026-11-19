@@ -16,22 +16,34 @@ import {
   Terminal,
   Copy,
   Check,
-  ExternalLink,
   BookOpen,
   History,
   Share2,
+  Radio,
+  RotateCw,
+  Send,
 } from 'lucide-react';
 import { normalizeUrl, fetchHealth } from '../../lib/api';
 import {
   getRecentBackendUrls,
   removeRecentBackendUrl,
   generateShareableUrl,
+  broadcastBackendUrl,
   RecentBackendUrlItem,
 } from '../../config/backendConfig';
 import { PestLanguageOption } from '../../types';
 
 export const ConnectionModal: React.FC = () => {
-  const { config, updateConfig, isSettingsOpen, closeSettings, addToast, checkHealth } = useConfig();
+  const {
+    config,
+    updateConfig,
+    isSettingsOpen,
+    closeSettings,
+    addToast,
+    checkHealth,
+    runAutoDiscover,
+    isAutoDiscovering,
+  } = useConfig();
 
   const [activeTab, setActiveTab] = useState<'settings' | 'guide'>('settings');
 
@@ -45,6 +57,7 @@ export const ConnectionModal: React.FC = () => {
   const [recentUrls, setRecentUrls] = useState<RecentBackendUrlItem[]>(getRecentBackendUrls);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{
     success: boolean;
@@ -105,6 +118,40 @@ export const ConnectionModal: React.FC = () => {
     }
   };
 
+  const handleScanOnline = async () => {
+    setTestResult(null);
+    const res = await runAutoDiscover();
+    if (res.found && res.url) {
+      setApiUrl(res.url);
+      setRecentUrls(getRecentBackendUrls());
+      setTestResult({
+        success: true,
+        message: `Đã tìm thấy máy chủ ONLINE: ${res.url}`,
+        device: res.device,
+      });
+    } else {
+      setTestResult({
+        success: false,
+        message: 'Không tìm thấy server nào Online trong danh sách Cloud Sync và file cấu hình. Vui lòng bật Google Colab.',
+      });
+    }
+  };
+
+  const handleBroadcast = async () => {
+    const clean = normalizeUrl(apiUrl);
+    if (!clean) return;
+
+    setIsBroadcasting(true);
+    const ok = await broadcastBackendUrl(clean);
+    setIsBroadcasting(false);
+
+    if (ok) {
+      addToast('success', 'Đã phát sóng link cho cả nhóm!', 'Mọi người dùng khác khi mở web sẽ tự động kết nối link này.');
+    } else {
+      addToast('error', 'Chưa thể phát sóng link', 'Vui lòng kiểm tra lại kết nối mạng.');
+    }
+  };
+
   const handleSave = () => {
     const cleaned = normalizeUrl(apiUrl);
     updateConfig({
@@ -116,7 +163,11 @@ export const ConnectionModal: React.FC = () => {
       pestLanguage,
     });
 
-    addToast('success', 'Đã lưu cấu hình kết nối', 'Các thay đổi đã được cập nhật thành công.');
+    if (cleaned && !mockMode) {
+      broadcastBackendUrl(cleaned).catch(() => {});
+    }
+
+    addToast('success', 'Đã lưu cấu hình kết nối', 'Hệ thống đã lưu và tự động đồng bộ máy chủ cho toàn nhóm.');
     checkHealth();
     closeSettings();
   };
@@ -139,7 +190,7 @@ export const ConnectionModal: React.FC = () => {
       title={
         <div className="flex items-center gap-2">
           <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <span className="font-semibold">Cài đặt kết nối Backend</span>
+          <span className="font-semibold">Cài đặt kết nối Backend & Đồng bộ nhóm</span>
         </div>
       }
     >
@@ -181,7 +232,7 @@ export const ConnectionModal: React.FC = () => {
                 Quy trình khởi chạy Google Colab Backend
               </p>
               <p className="text-[11px] text-blue-700 dark:text-blue-400">
-                Backend FastAPI dùng Cloudflared Tunnel miễn phí để tạo URL bảo mật HTTPS. Mỗi lần khởi động lại Colab, URL dạng <code className="bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded">https://xxxx.trycloudflare.com</code> sẽ thay đổi.
+                Backend FastAPI dùng Cloudflared Tunnel miễn phí để tạo URL bảo mật HTTPS. Mỗi lần khởi động lại Colab, notebook sẽ **tự động đồng bộ link lên Cloud** cho mọi người dùng cùng lúc!
               </p>
             </div>
 
@@ -206,28 +257,48 @@ export const ConnectionModal: React.FC = () => {
 
               <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  Bước 2: Lấy đường dẫn Cloudflared Tunnel
+                  Bước 2: Hệ thống tự động đồng bộ link
                 </span>
                 <p className="text-slate-500 text-[11px]">
-                  Ở cell cuối cùng, tìm dòng log in ra URL công khai:
-                </p>
-                <div className="p-2 rounded bg-slate-900 text-emerald-400 font-mono text-[11px]">
-                  https://some-random-subdomain.trycloudflare.com
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  Bước 3: Dán URL vào ô "Backend URL"
-                </span>
-                <p className="text-slate-500 text-[11px]">
-                  Chuyển sang tab "Cài đặt thông số", dán link vào ô Backend URL rồi bấm "Kiểm tra kết nối" và "Lưu cài đặt". Huy hiệu trên Header sẽ chuyển ngay sang màu xanh Online (CUDA/CPU).
+                  Ngay khi Colab mở tunnel thành công, notebook sẽ tự động phát sóng link lên kênh Cloud Sync. Bất kỳ ai vào web chỉ cần bấm <strong>"Dò tìm Server Online"</strong> hoặc web sẽ tự động kết nối ngay lập tức!
                 </p>
               </div>
             </div>
           </div>
         ) : (
           <div className="space-y-5 animate-in fade-in">
+            {/* Multi-user Cloud Sync Banner */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <span>Đồng bộ máy chủ đa người dùng (Cloud Sync & Config)</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Khi 1 bạn chạy Colab hoặc lưu link mới, toàn bộ nhóm sẽ tự động nhận link đang ONLINE.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleScanOnline}
+                disabled={isAutoDiscovering || mockMode}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold rounded-xl text-xs shadow-xs transition-all disabled:opacity-50 shrink-0"
+                title="Dò tìm và tự động kết nối máy chủ đang online trong Cloud Sync và backend-config.json"
+              >
+                {isAutoDiscovering ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang dò tìm...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Dò tìm Server Online</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Mock Mode Alert / Toggle */}
             <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between gap-4">
               <div className="flex items-start gap-2.5">
@@ -258,21 +329,39 @@ export const ConnectionModal: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Địa chỉ Backend URL (FastAPI / Cloudflared)
                 </label>
-                {apiUrl && !mockMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const shareLink = generateShareableUrl(apiUrl);
-                      navigator.clipboard.writeText(shareLink);
-                      addToast('success', 'Đã sao chép link chia sẻ 1-Click!', 'Người khác bấm link này sẽ tự động kết nối backend mà không bị hỏi.');
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
-                    title="Sao chép link web kèm sẵn URL backend này để gửi cho người khác"
-                  >
-                    <Share2 className="w-3 h-3" />
-                    <span>Sao chép Link chia sẻ 1-Click</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {apiUrl && !mockMode && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleBroadcast}
+                        disabled={isBroadcasting}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                        title="Phát sóng link này lên Cloud Sync để toàn bộ thành viên khác tự động nhận"
+                      >
+                        {isBroadcasting ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Send className="w-3 h-3" />
+                        )}
+                        <span>Phát sóng cho nhóm</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const shareLink = generateShareableUrl(apiUrl);
+                          navigator.clipboard.writeText(shareLink);
+                          addToast('success', 'Đã sao chép link chia sẻ 1-Click!', 'Người khác bấm link này sẽ tự động kết nối backend mà không bị hỏi.');
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+                        title="Sao chép link web kèm sẵn URL backend này để gửi cho người khác"
+                      >
+                        <Share2 className="w-3 h-3" />
+                        <span>Link 1-Click</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="relative">
                 <input
@@ -290,7 +379,7 @@ export const ConnectionModal: React.FC = () => {
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
                 <HelpCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                Hệ thống tự động thêm <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">https://</code> nếu bạn quên. Mỗi lần Colab chạy lại, link Cloudflared sẽ thay đổi.
+                Hệ thống tự động thêm <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">https://</code> nếu bạn quên. Mỗi lần Colab chạy lại, link sẽ tự động đồng bộ.
               </p>
 
               {/* Recently saved backend URLs */}
@@ -448,8 +537,8 @@ export const ConnectionModal: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'vi', label: 'Tiếng Việt', desc: 'Rầy nâu, Sâu cuốn lá...' },
-                  { id: 'en', label: 'English', desc: 'Brown Planthopper...' },
-                  { id: 'both', label: 'Song ngữ', desc: 'Rầy nâu (Planthopper)' },
+                  { id: 'en', label: 'Tiếng Anh', desc: 'Brown Planthopper...' },
+                  { id: 'both', label: 'Song ngữ', desc: 'Tên Việt (Tên Anh)' },
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -457,25 +546,18 @@ export const ConnectionModal: React.FC = () => {
                     onClick={() => setPestLanguageState(opt.id as PestLanguageOption)}
                     className={`p-2.5 rounded-xl border text-left transition-all ${
                       pestLanguage === opt.id
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 shadow-sm ring-1 ring-emerald-500'
-                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-500'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                     }`}
                   >
-                    <div className="font-bold text-xs flex items-center justify-between">
-                      <span>{opt.label}</span>
-                      {pestLanguage === opt.id && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      )}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                      {opt.desc}
-                    </div>
+                    <div className="font-semibold text-xs">{opt.label}</div>
+                    <div className="text-[10px] opacity-75 mt-0.5 truncate">{opt.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Test Result Message */}
+            {/* Test Connection Output Box */}
             {testResult && (
               <div
                 className={`p-3.5 rounded-xl border text-sm flex items-start gap-2.5 animate-in fade-in ${
@@ -489,10 +571,23 @@ export const ConnectionModal: React.FC = () => {
                 ) : (
                   <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                 )}
-                <div>
+                <div className="space-y-1">
                   <p className="font-semibold">{testResult.message}</p>
                   {testResult.device && (
-                    <p className="text-xs mt-0.5 opacity-90">Thiết bị xử lý: {testResult.device}</p>
+                    <p className="text-xs opacity-90">Thiết bị xử lý: <strong>{testResult.device}</strong></p>
+                  )}
+                  {testResult.success && !mockMode && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleBroadcast}
+                        disabled={isBroadcasting}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                      >
+                        {isBroadcasting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
+                        <span>Đồng bộ link này cho cả nhóm ngay</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -535,7 +630,7 @@ export const ConnectionModal: React.FC = () => {
               onClick={handleSave}
               className="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-xl shadow-md shadow-emerald-600/20 transition-all"
             >
-              Lưu cài đặt
+              Lưu & Đồng bộ nhóm
             </button>
           </div>
         </div>
@@ -543,5 +638,3 @@ export const ConnectionModal: React.FC = () => {
     </Modal>
   );
 };
-
-

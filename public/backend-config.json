@@ -1,0 +1,11 @@
+{
+  "syncTopic": "rice_pest_shared_backend_2026",
+  "latestBackendUrl": "https://makers-exact-men-strikes.trycloudflare.com",
+  "candidateUrls": [
+    "https://makers-exact-men-strikes.trycloudflare.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
+  ],
+  "autoDiscovery": true,
+  "description": "Cấu hình backend tập trung cho toàn bộ người dùng. Web sẽ tự động kiểm tra các URL này cùng với Cloud Sync (ntfy.sh) và tự động kết nối máy chủ đang ONLINE."
+}
